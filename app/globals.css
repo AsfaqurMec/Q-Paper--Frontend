@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 20% 98%;
+  --foreground: 222 34% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 34% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 34% 12%;
+  --muted: 210 18% 93%;
+  --muted-foreground: 215 15% 42%;
+  --accent: 166 48% 92%;
+  --accent-foreground: 172 72% 18%;
+  --primary: 172 72% 30%;
+  --primary-foreground: 0 0% 100%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 22% 86%;
+  --input: 214 22% 86%;
+  --ring: 172 72% 30%;
+}
+
+.dark {
+  --background: 220 18% 10%;
+  --foreground: 210 20% 96%;
+  --card: 222 18% 13%;
+  --card-foreground: 210 20% 96%;
+  --popover: 222 18% 13%;
+  --popover-foreground: 210 20% 96%;
+  --muted: 220 14% 18%;
+  --muted-foreground: 215 14% 68%;
+  --accent: 174 28% 18%;
+  --accent-foreground: 166 70% 84%;
+  --primary: 168 64% 42%;
+  --primary-foreground: 220 18% 10%;
+  --destructive: 0 68% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 14% 22%;
+  --input: 220 14% 22%;
+  --ring: 168 64% 42%;
+}
+
+select option {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans), "Kalpurush", "SolaimanLipi", "Noto Sans Bengali", "Segoe UI", system-ui, sans-serif;
+}
+
+.paper-preview {
+  background-image:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* KaTeX 2D Matrix & Table Structure Protection */
+.katex .mtable {
+  display: inline-flex !important;
+  vertical-align: middle !important;
+  box-sizing: content-box !important;
+}
+
+.katex .mtable .col-align-c,
+.katex .mtable .col-align-l,
+.katex .mtable .col-align-r {
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.katex .vlist-t {
+  display: inline-table !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+.katex .vlist-r {
+  display: table-row !important;
+}
+
+.katex .vlist {
+  display: table-cell !important;
+  position: relative !important;
+  vertical-align: bottom !important;
+}
+
+.katex .vlist > span {
+  display: block !important;
+  height: 0 !important;
+  position: relative !important;
+}
+
+.katex .vlist > span > span {
+  display: inline-block !important;
+}
+
+.katex-matrix-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  margin: 0 4px !important;
+  padding: 4px 0 !important;
+  line-height: normal !important;
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0.4deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-0.4deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 8s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 6s ease-in-out infinite;
+}
+
+

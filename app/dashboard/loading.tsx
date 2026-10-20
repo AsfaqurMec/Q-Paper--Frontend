@@ -1,0 +1,24 @@
+import Image from "next/image";
+import logosmall from "@/public/logo-small.png";
+
+export default function DashboardLoading() {
+  return (
+    <div className="flex min-h-[60vh] w-full items-center justify-center p-8">
+      <div className="flex flex-col items-center gap-3.5 rounded-2xl border bg-card/95 p-6 shadow-lg backdrop-blur-md max-w-xs text-center">
+        <div className="relative flex h-14 w-14 items-center justify-center">
+          <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping opacity-60" />
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-card border shadow-sm">
+            <Image src={logosmall} alt="ExamCraft Logo" width={32} height={32} className="animate-pulse" priority />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm font-bold text-foreground">পৃষ্ঠা লোড হচ্ছে...</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground">ড্যাশবোর্ড তথ্য লোড হচ্ছে...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
