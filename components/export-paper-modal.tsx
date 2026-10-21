@@ -93,7 +93,7 @@ export function ExportPaperModal({
 
     const queryString = params.toString() ? `?${params.toString()}` : "";
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000); // 45s safety timeout
+    const timer = setTimeout(() => controller.abort(), 90000); // 90s safety timeout
 
     try {
       const response = await fetch(`/api/backend/papers/${paperId}/export/${formatType}${queryString}`, {

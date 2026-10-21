@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
 import { apiRequest } from "@/lib/client-api";
+import { toStandardDigits } from "@/lib/utils";
 import type { BankQuestion, ClassHierarchy, Paper, UserSession } from "@/lib/api-types";
 
 type CreatePaperFromSelectedModalProps = {
@@ -208,7 +209,7 @@ export function CreatePaperFromSelectedModal({
         subject: subject.trim() || derivedSubject,
         examType: finalExamType,
         duration: duration.trim() || suggestedDuration,
-        totalMarks: Number(customMarks) || calculatedTotalMarks,
+        totalMarks: Number(toStandardDigits(customMarks)) || calculatedTotalMarks,
         layout,
         cqLayout,
         questionsPerPage: Number(questionsPerPage),
@@ -536,11 +537,16 @@ export function CreatePaperFromSelectedModal({
                     <span className="text-[10px] text-muted-foreground">Sum of questions: {calculatedTotalMarks}</span>
                   </div>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={customMarks}
-                    onChange={(e) => setCustomMarks(e.target.value)}
+                    onChange={(e) => setCustomMarks(toStandardDigits(e.target.value))}
+                    onBlur={() => {
+                      if (!customMarks) {
+                        setCustomMarks(String(calculatedTotalMarks));
+                      }
+                    }}
                     placeholder="e.g. 30"
                     className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
                   />

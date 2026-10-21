@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAppModal } from "@/components/modal-provider";
 import { clientApi } from "@/lib/client-api";
+import { toStandardDigits } from "@/lib/utils";
 import type {
   AcademicClass,
   AcademicClassDetail,
@@ -90,36 +91,58 @@ export function AdminCurriculumView({
   // Modals state
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<AcademicClass | null>(null);
-  const [classFormData, setClassFormData] = useState({
+  const [classFormData, setClassFormData] = useState<{
+    name: string;
+    code: string;
+    aliases: string;
+    order: number | string;
+    status: "active" | "inactive";
+  }>({
     name: "",
     code: "",
     aliases: "",
     order: 0,
-    status: "active" as "active" | "inactive"
+    status: "active"
   });
 
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<SubjectEntity | null>(null);
-  const [subjectFormData, setSubjectFormData] = useState({
+  const [subjectFormData, setSubjectFormData] = useState<{
+    classId: string;
+    name: string;
+    code: string;
+    category: string;
+    aliases: string;
+    order: number | string;
+    status: "active" | "inactive";
+  }>({
     classId: "",
     name: "",
     code: "",
     category: "General",
     aliases: "",
     order: 0,
-    status: "active" as "active" | "inactive"
+    status: "active"
   });
 
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
   const [editingChapter, setEditingChapter] = useState<ChapterEntity | null>(null);
-  const [chapterFormData, setChapterFormData] = useState({
+  const [chapterFormData, setChapterFormData] = useState<{
+    classId: string;
+    subjectId: string;
+    chapterNumber: number | string;
+    name: string;
+    aliases: string;
+    order: number | string;
+    status: "active" | "inactive";
+  }>({
     classId: "",
     subjectId: "",
     chapterNumber: 1,
     name: "",
     aliases: "",
     order: 0,
-    status: "active" as "active" | "inactive"
+    status: "active"
   });
 
   // Detail Inspector Modals state
@@ -299,7 +322,7 @@ export function AdminCurriculumView({
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        order: Number(classFormData.order) || 0,
+        order: Number(toStandardDigits(String(classFormData.order))) || 0,
         status: classFormData.status
       };
 
@@ -402,7 +425,7 @@ export function AdminCurriculumView({
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        order: Number(subjectFormData.order) || 0,
+        order: Number(toStandardDigits(String(subjectFormData.order))) || 0,
         status: subjectFormData.status
       };
 
@@ -509,13 +532,13 @@ export function AdminCurriculumView({
       const payload = {
         classId: chapterFormData.classId || undefined,
         subjectId: chapterFormData.subjectId,
-        chapterNumber: Number(chapterFormData.chapterNumber) || 1,
+        chapterNumber: Number(toStandardDigits(String(chapterFormData.chapterNumber))) || 1,
         name: chapterFormData.name.trim(),
         aliases: chapterFormData.aliases
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        order: Number(chapterFormData.order) || 0,
+        order: Number(toStandardDigits(String(chapterFormData.order))) || 0,
         status: chapterFormData.status
       };
 
@@ -1552,9 +1575,13 @@ export function AdminCurriculumView({
                   <Label htmlFor="cls-order">Display Order</Label>
                   <Input
                     id="cls-order"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={classFormData.order}
-                    onChange={(e) => setClassFormData({ ...classFormData, order: parseInt(e.target.value, 10) || 0 })}
+                    onChange={(e) => setClassFormData({ ...classFormData, order: toStandardDigits(e.target.value) })}
+                    onBlur={() => {
+                      if (classFormData.order === "") setClassFormData({ ...classFormData, order: 0 });
+                    }}
                     className="mt-1"
                   />
                 </div>
@@ -1689,9 +1716,13 @@ export function AdminCurriculumView({
                   <Label htmlFor="subj-order">Display Order</Label>
                   <Input
                     id="subj-order"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={subjectFormData.order}
-                    onChange={(e) => setSubjectFormData({ ...subjectFormData, order: parseInt(e.target.value, 10) || 0 })}
+                    onChange={(e) => setSubjectFormData({ ...subjectFormData, order: toStandardDigits(e.target.value) })}
+                    onBlur={() => {
+                      if (subjectFormData.order === "") setSubjectFormData({ ...subjectFormData, order: 0 });
+                    }}
                     className="mt-1"
                   />
                 </div>
@@ -1795,12 +1826,15 @@ export function AdminCurriculumView({
                   <Label htmlFor="chap-num">Chapter # *</Label>
                   <Input
                     id="chap-num"
-                    type="number"
-                    min={1}
+                    type="text"
+                    inputMode="numeric"
                     value={chapterFormData.chapterNumber}
                     onChange={(e) =>
-                      setChapterFormData({ ...chapterFormData, chapterNumber: parseInt(e.target.value, 10) || 1 })
+                      setChapterFormData({ ...chapterFormData, chapterNumber: toStandardDigits(e.target.value) })
                     }
+                    onBlur={() => {
+                      if (!chapterFormData.chapterNumber) setChapterFormData({ ...chapterFormData, chapterNumber: 1 });
+                    }}
                     className="mt-1"
                     required
                   />
@@ -1834,11 +1868,15 @@ export function AdminCurriculumView({
                   <Label htmlFor="chap-order">Order</Label>
                   <Input
                     id="chap-order"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={chapterFormData.order}
                     onChange={(e) =>
-                      setChapterFormData({ ...chapterFormData, order: parseInt(e.target.value, 10) || 0 })
+                      setChapterFormData({ ...chapterFormData, order: toStandardDigits(e.target.value) })
                     }
+                    onBlur={() => {
+                      if (chapterFormData.order === "") setChapterFormData({ ...chapterFormData, order: 0 });
+                    }}
                     className="mt-1"
                   />
                 </div>

@@ -35,20 +35,21 @@ import { apiRequest } from "@/lib/client-api";
 import { ExportPaperModal } from "@/components/export-paper-modal";
 import { latexToCleanMath } from "@/lib/math-utils";
 import { sanitizeSvg } from "@/lib/sanitize";
+import { toStandardDigits } from "@/lib/utils";
 import type { BankQuestion, Paper } from "@/lib/api-types";
 
-type DraftQuestion = {
+export type DraftQuestion = {
   id: string;
   number?: string;
   type: "mcq" | "cq";
   title: string;
   subtitle: string;
   imageUrl: string;
-  marks: number;
+  marks: number | string;
   explanation: string;
   options: string[];
   correct: number;
-  subQuestions: Array<{ id: string; label?: string; text: string; marks: number; answer: string; explanation: string }>;
+  subQuestions: Array<{ id: string; label?: string; text: string; marks: number | string; answer: string; explanation: string }>;
 };
 
 const emptyQuestion = (): DraftQuestion => ({
@@ -84,7 +85,7 @@ function toPreviewQuestion(question: DraftQuestion, optionLabelStyle?: string): 
     title: question.title,
     subtitle: question.subtitle,
     imageUrl: question.imageUrl,
-    marks: Number(question.marks || 1),
+    marks: Number(toStandardDigits(question.marks) || 1),
     options: question.options.map((option, index) => ({
       id: `${question.id}_opt_${index}`,
       label: isBanglaStyle ? (banglaLetters[index] || String.fromCharCode(65 + index)) : String.fromCharCode(65 + index),
@@ -94,7 +95,7 @@ function toPreviewQuestion(question: DraftQuestion, optionLabelStyle?: string): 
     subQuestions: question.subQuestions.map((item, index) => {
       const banglaLabels = ["ক", "খ", "গ", "ঘ", "ঙ"];
       const fallback = index < banglaLabels.length ? banglaLabels[index] : String.fromCharCode(97 + index);
-      return { id: item.id, label: item.label || fallback, text: item.text, marks: item.marks };
+      return { id: item.id, label: item.label || fallback, text: item.text, marks: Number(toStandardDigits(item.marks) || 1) };
     })
   };
 }
@@ -458,7 +459,7 @@ export function QuestionEditor({
             title: question.title,
             subtitle: question.subtitle || undefined,
             imageUrl: question.imageUrl || undefined,
-            marks: Number(question.marks || 1),
+            marks: Number(toStandardDigits(question.marks) || 1),
             explanation: question.explanation || undefined,
             type: question.type,
             options:
@@ -484,7 +485,7 @@ export function QuestionEditor({
                       id: item.id,
                       label: item.label,
                       text: item.text,
-                      marks: Number(item.marks || 1),
+                      marks: Number(toStandardDigits(item.marks) || 1),
                       answer: item.answer || undefined,
                       explanation: item.explanation || undefined
                     }))
@@ -1462,11 +1463,20 @@ export function QuestionEditor({
                           Marks
                         </label>
                         <input
-                          type="number"
-                          min="0.25"
-                          step="0.25"
-                          value={question.marks}
-                          onChange={(event) => updateQuestion(question.id, { marks: Number(event.target.value) })}
+                          type="text"
+                          inputMode="decimal"
+                          value={question.marks ?? ""}
+                          onChange={(event) => {
+                            const val = toStandardDigits(event.target.value);
+                            if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                              updateQuestion(question.id, { marks: val });
+                            }
+                          }}
+                          onBlur={() => {
+                            const num = parseFloat(toStandardDigits(question.marks));
+                            updateQuestion(question.id, { marks: isNaN(num) || num <= 0 ? 1 : num });
+                          }}
+                          placeholder="1"
                           className="h-10 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </div>
@@ -1601,13 +1611,19 @@ export function QuestionEditor({
                             />
                             <div className="grid gap-2 sm:grid-cols-[110px_1fr]">
                               <input
-                                type="number"
-                                min="0.25"
-                                step="0.25"
-                                value={item.marks}
-                                onChange={(event) =>
-                                  updateSubQuestion(question.id, item.id, { marks: Number(event.target.value) })
-                                }
+                                type="text"
+                                inputMode="decimal"
+                                value={item.marks ?? ""}
+                                onChange={(event) => {
+                                  const val = toStandardDigits(event.target.value);
+                                  if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                                    updateSubQuestion(question.id, item.id, { marks: val });
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const num = parseFloat(toStandardDigits(item.marks));
+                                  updateSubQuestion(question.id, item.id, { marks: isNaN(num) || num <= 0 ? 1 : num });
+                                }}
                                 className="h-9 rounded-md border bg-background px-3 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                                 placeholder="Marks"
                               />

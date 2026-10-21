@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Settings2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
+import { toStandardDigits } from "@/lib/utils";
 import type { Paper } from "@/lib/api-types";
 
 type EditPaperDetailsModalProps = {
@@ -80,7 +81,7 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
           institute: formData.institute.trim(),
           examType: formData.examType,
           duration: formData.duration.trim(),
-          totalMarks: Number(formData.totalMarks),
+          totalMarks: Number(toStandardDigits(formData.totalMarks) || 1),
           instructions: formData.instructions.trim(),
           layout: formData.layout,
           cqLayout: formData.cqLayout,
@@ -201,10 +202,22 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
                 Total Marks
               </label>
               <input
-                type="number"
-                min={1}
+                type="text"
+                inputMode="numeric"
                 value={formData.totalMarks}
-                onChange={(e) => setFormData((prev) => ({ ...prev, totalMarks: Number(e.target.value) }))}
+                onChange={(e) => {
+                  const val = toStandardDigits(e.target.value);
+                  if (val === "" || /^\d+$/.test(val)) {
+                    setFormData((prev) => ({ ...prev, totalMarks: val as any }));
+                  }
+                }}
+                onBlur={() => {
+                  const num = parseInt(toStandardDigits(formData.totalMarks), 10);
+                  if (isNaN(num) || num <= 0) {
+                    setFormData((prev) => ({ ...prev, totalMarks: 30 }));
+                  }
+                }}
+                placeholder="e.g. 30"
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>

@@ -18,4 +18,19 @@ export function extractChapterNumber(name: string): number {
   }
   return 9999;
 }
+export function toStandardDigits(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) return "";
+  const str = String(value);
+  const banglaDigits: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+  };
+  return str.replace(/[০-৯]/g, (d) => banglaDigits[d] || d);
+}
 
+export function parseNumberInput(value: string | number | undefined | null, fallback = 0): number {
+  if (value === undefined || value === null || value === "") return fallback;
+  const normalized = toStandardDigits(value);
+  const parsed = parseFloat(normalized);
+  return isNaN(parsed) ? fallback : parsed;
+}

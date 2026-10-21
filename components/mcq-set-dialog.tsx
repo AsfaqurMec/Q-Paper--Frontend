@@ -19,20 +19,7 @@ import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
 import { useAppModal } from "@/components/modal-provider";
 import type { Paper } from "@/lib/api-types";
-
-type DraftQuestion = {
-  id: string;
-  number?: string;
-  type: "mcq" | "cq";
-  title: string;
-  subtitle: string;
-  imageUrl: string;
-  marks: number;
-  explanation: string;
-  options: string[];
-  correct: number;
-  subQuestions: Array<{ id: string; label?: string; text: string; marks: number; answer: string; explanation: string }>;
-};
+import type { DraftQuestion } from "@/components/question-editor";
 
 type McqSetDialogProps = {
   open: boolean;

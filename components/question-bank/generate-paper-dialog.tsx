@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
-import { extractChapterNumber } from "@/lib/utils";
+import { extractChapterNumber, toStandardDigits } from "@/lib/utils";
 import type { ClassHierarchy, Paper, UserSession } from "@/lib/api-types";
 
 type GeneratePaperDialogProps = {
@@ -79,13 +79,13 @@ export function GeneratePaperDialog({
   const [paperType, setPaperType] = useState<"both" | "mcq" | "cq">(
     preselectedType === "mcq" ? "mcq" : preselectedType === "cq" ? "cq" : "both"
   );
-  const [mcqCount, setMcqCount] = useState(25);
-  const [mcqTheoryCount, setMcqTheoryCount] = useState(15);
-  const [mcqMathCount, setMcqMathCount] = useState(10);
+  const [mcqCount, setMcqCount] = useState<number | string>(25);
+  const [mcqTheoryCount, setMcqTheoryCount] = useState<number | string>(15);
+  const [mcqMathCount, setMcqMathCount] = useState<number | string>(10);
 
-  const [cqCount, setCqCount] = useState(4);
-  const [cqTheoryCount, setCqTheoryCount] = useState(2);
-  const [cqMathCount, setCqMathCount] = useState(2);
+  const [cqCount, setCqCount] = useState<number | string>(4);
+  const [cqTheoryCount, setCqTheoryCount] = useState<number | string>(2);
+  const [cqMathCount, setCqMathCount] = useState<number | string>(2);
 
   const [boardOnly, setBoardOnly] = useState(false);
   const [selectedBoard, setSelectedBoard] = useState<string>("all");
@@ -105,7 +105,16 @@ export function GeneratePaperDialog({
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState("");
 
-  function handleMcqTotalChange(val: number) {
+  function handleMcqTotalChange(val: number | string) {
+    if (typeof val === "string") {
+      const clean = toStandardDigits(val).replace(/[^0-9]/g, "");
+      if (clean === "") {
+        setMcqCount("");
+        return;
+      }
+      val = parseInt(clean, 10);
+    }
+    if (isNaN(val)) return;
     const total = Math.max(1, Math.min(100, val));
     setMcqCount(total);
     const theory = Math.round(total * 0.6);
@@ -114,19 +123,48 @@ export function GeneratePaperDialog({
     setMcqMathCount(math);
   }
 
-  function handleMcqTheoryChange(val: number) {
-    const theory = Math.max(0, Math.min(mcqCount, val));
+  function handleMcqTheoryChange(val: number | string) {
+    if (typeof val === "string") {
+      const clean = toStandardDigits(val).replace(/[^0-9]/g, "");
+      if (clean === "") {
+        setMcqTheoryCount("");
+        return;
+      }
+      val = parseInt(clean, 10);
+    }
+    if (isNaN(val)) return;
+    const total = typeof mcqCount === "number" ? mcqCount : parseInt(toStandardDigits(String(mcqCount)), 10) || 25;
+    const theory = Math.max(0, Math.min(total, val));
     setMcqTheoryCount(theory);
-    setMcqMathCount(mcqCount - theory);
+    setMcqMathCount(total - theory);
   }
 
-  function handleMcqMathChange(val: number) {
-    const math = Math.max(0, Math.min(mcqCount, val));
+  function handleMcqMathChange(val: number | string) {
+    if (typeof val === "string") {
+      const clean = toStandardDigits(val).replace(/[^0-9]/g, "");
+      if (clean === "") {
+        setMcqMathCount("");
+        return;
+      }
+      val = parseInt(clean, 10);
+    }
+    if (isNaN(val)) return;
+    const total = typeof mcqCount === "number" ? mcqCount : parseInt(toStandardDigits(String(mcqCount)), 10) || 25;
+    const math = Math.max(0, Math.min(total, val));
     setMcqMathCount(math);
-    setMcqTheoryCount(mcqCount - math);
+    setMcqTheoryCount(total - math);
   }
 
-  function handleCqTotalChange(val: number) {
+  function handleCqTotalChange(val: number | string) {
+    if (typeof val === "string") {
+      const clean = toStandardDigits(val).replace(/[^0-9]/g, "");
+      if (clean === "") {
+        setCqCount("");
+        return;
+      }
+      val = parseInt(clean, 10);
+    }
+    if (isNaN(val)) return;
     const total = Math.max(1, Math.min(30, val));
     setCqCount(total);
     const theory = Math.round(total / 2);
@@ -135,16 +173,36 @@ export function GeneratePaperDialog({
     setCqMathCount(math);
   }
 
-  function handleCqTheoryChange(val: number) {
-    const theory = Math.max(0, Math.min(cqCount, val));
+  function handleCqTheoryChange(val: number | string) {
+    if (typeof val === "string") {
+      const clean = toStandardDigits(val).replace(/[^0-9]/g, "");
+      if (clean === "") {
+        setCqTheoryCount("");
+        return;
+      }
+      val = parseInt(clean, 10);
+    }
+    if (isNaN(val)) return;
+    const total = typeof cqCount === "number" ? cqCount : parseInt(toStandardDigits(String(cqCount)), 10) || 4;
+    const theory = Math.max(0, Math.min(total, val));
     setCqTheoryCount(theory);
-    setCqMathCount(cqCount - theory);
+    setCqMathCount(total - theory);
   }
 
-  function handleCqMathChange(val: number) {
-    const math = Math.max(0, Math.min(cqCount, val));
+  function handleCqMathChange(val: number | string) {
+    if (typeof val === "string") {
+      const clean = toStandardDigits(val).replace(/[^0-9]/g, "");
+      if (clean === "") {
+        setCqMathCount("");
+        return;
+      }
+      val = parseInt(clean, 10);
+    }
+    if (isNaN(val)) return;
+    const total = typeof cqCount === "number" ? cqCount : parseInt(toStandardDigits(String(cqCount)), 10) || 4;
+    const math = Math.max(0, Math.min(total, val));
     setCqMathCount(math);
-    setCqTheoryCount(cqCount - math);
+    setCqTheoryCount(total - math);
   }
 
   // Step ticker while generating
@@ -254,8 +312,10 @@ export function GeneratePaperDialog({
   const computedDuration = useMemo(() => {
     if (customDuration.trim()) return customDuration;
     let totalMinutes = 0;
-    if (paperType === "mcq" || paperType === "both") totalMinutes += mcqCount * 1;
-    if (paperType === "cq" || paperType === "both") totalMinutes += cqCount * 20;
+    const mcqNum = Number(toStandardDigits(mcqCount)) || 0;
+    const cqNum = Number(toStandardDigits(cqCount)) || 0;
+    if (paperType === "mcq" || paperType === "both") totalMinutes += mcqNum * 1;
+    if (paperType === "cq" || paperType === "both") totalMinutes += cqNum * 20;
 
     if (totalMinutes <= 0) return "30 minutes";
     const hrs = Math.floor(totalMinutes / 60);
@@ -268,16 +328,20 @@ export function GeneratePaperDialog({
   // Total marks calculation
   const totalCalculatedMarks = useMemo(() => {
     let marks = 0;
-    if (paperType === "mcq" || paperType === "both") marks += mcqCount * 1;
-    if (paperType === "cq" || paperType === "both") marks += cqCount * 10;
+    const mcqNum = Number(toStandardDigits(mcqCount)) || 0;
+    const cqNum = Number(toStandardDigits(cqCount)) || 0;
+    if (paperType === "mcq" || paperType === "both") marks += mcqNum * 1;
+    if (paperType === "cq" || paperType === "both") marks += cqNum * 10;
     return marks;
   }, [paperType, mcqCount, cqCount]);
 
   // Total questions count
   const totalQuestionsCount = useMemo(() => {
     let count = 0;
-    if (paperType === "mcq" || paperType === "both") count += mcqCount;
-    if (paperType === "cq" || paperType === "both") count += cqCount;
+    const mcqNum = Number(toStandardDigits(mcqCount)) || 0;
+    const cqNum = Number(toStandardDigits(cqCount)) || 0;
+    if (paperType === "mcq" || paperType === "both") count += mcqNum;
+    if (paperType === "cq" || paperType === "both") count += cqNum;
     return count;
   }, [paperType, mcqCount, cqCount]);
 
@@ -288,8 +352,8 @@ export function GeneratePaperDialog({
     if (!isPro) return;
     setError("");
 
-    const finalMcqCount = paperType === "cq" ? 0 : Number(mcqCount);
-    const finalCqCount = paperType === "mcq" ? 0 : Number(cqCount);
+    const finalMcqCount = paperType === "cq" ? 0 : (Number(toStandardDigits(mcqCount)) || 0);
+    const finalCqCount = paperType === "mcq" ? 0 : (Number(toStandardDigits(cqCount)) || 0);
 
     if (paperType === "mcq" && finalMcqCount <= 0) {
       setError("Please specify at least 1 MCQ.");
@@ -320,11 +384,11 @@ export function GeneratePaperDialog({
         chapter: chapter === "all" ? undefined : chapter,
         type: paperType,
         mcqCount: finalMcqCount,
-        mcqTheoryCount: paperType === "cq" ? 0 : mcqTheoryCount,
-        mcqMathCount: paperType === "cq" ? 0 : mcqMathCount,
+        mcqTheoryCount: paperType === "cq" ? 0 : (Number(toStandardDigits(mcqTheoryCount)) || 0),
+        mcqMathCount: paperType === "cq" ? 0 : (Number(toStandardDigits(mcqMathCount)) || 0),
         cqCount: finalCqCount,
-        cqTheoryCount: paperType === "mcq" ? 0 : cqTheoryCount,
-        cqMathCount: paperType === "mcq" ? 0 : cqMathCount,
+        cqTheoryCount: paperType === "mcq" ? 0 : (Number(toStandardDigits(cqTheoryCount)) || 0),
+        cqMathCount: paperType === "mcq" ? 0 : (Number(toStandardDigits(cqMathCount)) || 0),
         difficulty,
         examType,
         duration: computedDuration,
@@ -732,11 +796,13 @@ export function GeneratePaperDialog({
 
                       <div className="flex items-center gap-2">
                         <input
-                          type="number"
-                          min="1"
-                          max="100"
+                          type="text"
+                          inputMode="numeric"
                           value={mcqCount}
-                          onChange={(e) => handleMcqTotalChange(parseInt(e.target.value, 10) || 1)}
+                          onChange={(e) => handleMcqTotalChange(e.target.value)}
+                          onBlur={() => {
+                            if (!mcqCount || Number(mcqCount) < 1) handleMcqTotalChange(25);
+                          }}
                           className="h-9 w-20 rounded-lg border bg-background px-2 text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
                         />
                         <div className="flex flex-wrap gap-1.5 flex-1">
@@ -769,22 +835,26 @@ export function GeneratePaperDialog({
                           <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">📖 তত্ত্বীয়:</span>
                             <input
-                              type="number"
-                              min="0"
-                              max={mcqCount}
+                              type="text"
+                              inputMode="numeric"
                               value={mcqTheoryCount}
-                              onChange={(e) => handleMcqTheoryChange(parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) => handleMcqTheoryChange(e.target.value)}
+                              onBlur={() => {
+                                if (mcqTheoryCount === "" || Number(mcqTheoryCount) < 0) handleMcqTheoryChange(0);
+                              }}
                               className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
                             />
                           </div>
                           <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">🔢 গাণিতিক:</span>
                             <input
-                              type="number"
-                              min="0"
-                              max={mcqCount}
+                              type="text"
+                              inputMode="numeric"
                               value={mcqMathCount}
-                              onChange={(e) => handleMcqMathChange(parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) => handleMcqMathChange(e.target.value)}
+                              onBlur={() => {
+                                if (mcqMathCount === "" || Number(mcqMathCount) < 0) handleMcqMathChange(0);
+                              }}
                               className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
                             />
                           </div>
@@ -802,17 +872,19 @@ export function GeneratePaperDialog({
                           <p className="text-[11px] text-muted-foreground">প্রতিটি প্রশ্নের মান ১০</p>
                         </div>
                         <span className="text-xs font-semibold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-md">
-                          {cqCount} × ১০ = {cqCount * 10} নম্বর
+                          {cqCount} × ১০ = {Number(cqCount || 0) * 10} নম্বর
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <input
-                          type="number"
-                          min="1"
-                          max="30"
+                          type="text"
+                          inputMode="numeric"
                           value={cqCount}
-                          onChange={(e) => handleCqTotalChange(parseInt(e.target.value, 10) || 1)}
+                          onChange={(e) => handleCqTotalChange(e.target.value)}
+                          onBlur={() => {
+                            if (!cqCount || Number(cqCount) < 1) handleCqTotalChange(4);
+                          }}
                           className="h-9 w-20 rounded-lg border bg-background px-2 text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
                         />
                         <div className="flex flex-wrap gap-1.5 flex-1">
@@ -845,22 +917,26 @@ export function GeneratePaperDialog({
                           <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">📖 তত্ত্বীয়:</span>
                             <input
-                              type="number"
-                              min="0"
-                              max={cqCount}
+                              type="text"
+                              inputMode="numeric"
                               value={cqTheoryCount}
-                              onChange={(e) => handleCqTheoryChange(parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) => handleCqTheoryChange(e.target.value)}
+                              onBlur={() => {
+                                if (cqTheoryCount === "" || Number(cqTheoryCount) < 0) handleCqTheoryChange(0);
+                              }}
                               className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
                             />
                           </div>
                           <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">🔢 গাণিতিক:</span>
                             <input
-                              type="number"
-                              min="0"
-                              max={cqCount}
+                              type="text"
+                              inputMode="numeric"
                               value={cqMathCount}
-                              onChange={(e) => handleCqMathChange(parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) => handleCqMathChange(e.target.value)}
+                              onBlur={() => {
+                                if (cqMathCount === "" || Number(cqMathCount) < 0) handleCqMathChange(0);
+                              }}
                               className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
                             />
                           </div>

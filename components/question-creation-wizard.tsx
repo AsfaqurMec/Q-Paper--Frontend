@@ -30,7 +30,7 @@ import { MathRenderer } from "@/components/math-renderer";
 import { ImportImageModal } from "@/components/import-image-modal";
 import { latexToCleanMath } from "@/lib/math-utils";
 import { apiRequest } from "@/lib/client-api";
-import { cn } from "@/lib/utils";
+import { cn, toStandardDigits } from "@/lib/utils";
 import { sanitizeSvg } from "@/lib/sanitize";
 import type { Paper, UserSession } from "@/lib/api-types";
 
@@ -292,11 +292,11 @@ export function QuestionCreationWizard({
                     id: sq.id || `${question.id}_sq_${sqIdx}`,
                     label: sq.label || String.fromCharCode(97 + sqIdx),
                     text: sq.text,
-                    marks: Number(sq.marks) || 1
+                    marks: Number(toStandardDigits(sq.marks)) || 1
                   }))
                 : undefined;
               const totalMarks = question.marks
-                ? Number(question.marks)
+                ? Number(toStandardDigits(question.marks)) || 1
                 : subQuestions?.length
                   ? subQuestions.reduce((sum, sq) => sum + sq.marks, 0)
                   : 1;
@@ -563,7 +563,23 @@ export function QuestionCreationWizard({
                     </label>
                     <label className="text-sm font-medium">
                       Marks
-                      <input type="number" min="0.25" step="0.25" value={question.marks ?? ""} onChange={(event) => updatePreview(question.id, { marks: event.target.value ? Number(event.target.value) : null })} className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm" />
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={question.marks ?? ""}
+                        onChange={(event) => {
+                          const val = toStandardDigits(event.target.value);
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                            updatePreview(question.id, { marks: val as any });
+                          }
+                        }}
+                        onBlur={() => {
+                          const num = parseFloat(toStandardDigits(question.marks));
+                          updatePreview(question.id, { marks: isNaN(num) || num <= 0 ? 1 : num });
+                        }}
+                        placeholder="1"
+                        className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      />
                     </label>
                   </div>
                   <label className="block text-sm font-medium">
@@ -681,11 +697,19 @@ export function QuestionCreationWizard({
                               <label className="flex items-center gap-1 text-xs text-muted-foreground">
                                 Marks:
                                 <input
-                                  type="number"
-                                  min="0.25"
-                                  step="0.25"
-                                  value={sq.marks}
-                                  onChange={(e) => updatePreviewSubQuestion(question.id, sqIdx, { marks: Number(e.target.value) || 1 })}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={sq.marks ?? ""}
+                                  onChange={(e) => {
+                                    const val = toStandardDigits(e.target.value);
+                                    if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                                      updatePreviewSubQuestion(question.id, sqIdx, { marks: val as any });
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    const num = parseFloat(toStandardDigits(sq.marks));
+                                    updatePreviewSubQuestion(question.id, sqIdx, { marks: isNaN(num) || num <= 0 ? 1 : num });
+                                  }}
                                   className="h-7 w-16 rounded border bg-background px-2 text-xs"
                                 />
                               </label>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
 import { ImportImageModal } from "@/components/import-image-modal";
 import { apiRequest } from "@/lib/client-api";
-import { extractChapterNumber } from "@/lib/utils";
+import { extractChapterNumber, toStandardDigits } from "@/lib/utils";
 import type { BankQuestion, BankSubQuestion, BankTag, ClassHierarchy } from "@/lib/api-types";
 
 type QuestionFormProps = {
@@ -19,7 +19,9 @@ type QuestionFormProps = {
   onSaved: (question: BankQuestion) => void;
 };
 
-const DEFAULT_SUBQUESTIONS: BankSubQuestion[] = [
+type FormSubQuestion = Omit<BankSubQuestion, "marks"> & { marks: number | string };
+
+const DEFAULT_SUBQUESTIONS: FormSubQuestion[] = [
   { label: "ক", text: "", marks: 1, answer: "", explanation: "" },
   { label: "খ", text: "", marks: 2, answer: "", explanation: "" },
   { label: "গ", text: "", marks: 3, answer: "", explanation: "" },
@@ -89,10 +91,10 @@ export function QuestionFormModal({
   const [subtitle, setSubtitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [marks, setMarks] = useState(1);
+  const [marks, setMarks] = useState<number | string>(1);
   const [options, setOptions] = useState<string[]>(["", "", "", ""]);
   const [correctIndex, setCorrectIndex] = useState(0);
-  const [subQuestions, setSubQuestions] = useState<BankSubQuestion[]>(DEFAULT_SUBQUESTIONS);
+  const [subQuestions, setSubQuestions] = useState<FormSubQuestion[]>(DEFAULT_SUBQUESTIONS);
   const [explanation, setExplanation] = useState("");
 
   const [error, setError] = useState("");
@@ -338,10 +340,14 @@ export function QuestionFormModal({
         title: title.trim(),
         subtitle: subtitle.trim() || undefined,
         imageUrl: imageUrl.trim() || undefined,
-        marks: type === "cq" ? subQuestions.reduce((s, sq) => s + sq.marks, 0) : Number(marks) || 1,
+        marks: type === "cq"
+          ? subQuestions.reduce((s, sq) => s + (Number(toStandardDigits(sq.marks)) || 0), 0)
+          : (Number(toStandardDigits(marks)) || 1),
         options: type === "mcq" ? filledOptions : [],
         correctIndex: type === "mcq" ? correctIndex : 0,
-        subQuestions: type === "cq" ? subQuestions : undefined,
+        subQuestions: type === "cq"
+          ? subQuestions.map((sq) => ({ ...sq, marks: Number(toStandardDigits(sq.marks)) || 1 }))
+          : undefined,
         explanation: explanation.trim() || undefined,
         tags: tags.length > 0 ? tags : undefined
       };
@@ -807,12 +813,21 @@ export function QuestionFormModal({
             <div>
               <label className="text-xs font-medium text-muted-foreground">Total Marks</label>
               <input
-                type="number"
-                min={1}
-                max={100}
-                value={type === "cq" ? subQuestions.reduce((s, sq) => s + sq.marks, 0) : marks}
-                onChange={(e) => setMarks(Number(e.target.value))}
+                type="text"
+                inputMode="decimal"
+                value={type === "cq" ? subQuestions.reduce((s, sq) => s + (Number(toStandardDigits(sq.marks)) || 0), 0) : marks}
+                onChange={(e) => {
+                  const val = toStandardDigits(e.target.value);
+                  if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                    setMarks(val);
+                  }
+                }}
+                onBlur={() => {
+                  const num = parseFloat(toStandardDigits(marks));
+                  setMarks(isNaN(num) || num <= 0 ? 1 : num);
+                }}
                 disabled={type === "cq"}
+                placeholder="1"
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-xs"
               />
             </div>
@@ -996,9 +1011,19 @@ export function QuestionFormModal({
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] text-muted-foreground">Marks:</span>
                         <input
-                          type="number" min={1} max={10}
+                          type="text"
+                          inputMode="decimal"
                           value={sq.marks}
-                          onChange={(e) => updateSubQuestion(idx, { marks: Number(e.target.value) })}
+                          onChange={(e) => {
+                            const val = toStandardDigits(e.target.value);
+                            if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                              updateSubQuestion(idx, { marks: val as any });
+                            }
+                          }}
+                          onBlur={() => {
+                            const num = parseFloat(toStandardDigits(sq.marks));
+                            updateSubQuestion(idx, { marks: isNaN(num) || num <= 0 ? 1 : num });
+                          }}
                           className="w-14 h-6 rounded border bg-background px-1.5 text-xs text-center font-semibold text-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
                         />
                       </div>

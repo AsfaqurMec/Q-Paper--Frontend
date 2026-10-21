@@ -9,7 +9,7 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/client-api";
-import { cn } from "@/lib/utils";
+import { cn, toStandardDigits } from "@/lib/utils";
 import type { Paper } from "@/lib/api-types";
 
 type CreationMethod = "manual" | "automatic";
@@ -95,7 +95,7 @@ export function PaperCreationWizard() {
         method: "POST",
         body: JSON.stringify({
           ...form,
-          totalMarks: Number(form.totalMarks || 1),
+          totalMarks: Number(toStandardDigits(form.totalMarks) || 1),
           questionsPerPage: form.questionsPerPage !== undefined && form.questionsPerPage !== "" ? Number(form.questionsPerPage) : 10,
           instructions: form.instructions.trim() || undefined,
           mcqSectionTitle: form.mcqSectionTitle?.trim() || undefined,
@@ -170,7 +170,25 @@ export function PaperCreationWizard() {
               <TextField label="Class" value={form.className} onChange={(value) => updateForm("className", value)} placeholder="Class 10" />
               <TextField label="Exam type" value={form.examType} onChange={(value) => updateForm("examType", value)} placeholder="Model Test" />
               <TextField label="Duration" value={form.duration} onChange={(value) => updateForm("duration", value)} placeholder="45 minutes" />
-              <TextField label="Total marks" value={form.totalMarks} onChange={(value) => updateForm("totalMarks", value)} type="number" />
+              <TextField
+                label="Total marks"
+                value={form.totalMarks}
+                onChange={(value) => {
+                  const std = toStandardDigits(value);
+                  if (std === "" || /^\d+$/.test(std)) {
+                    updateForm("totalMarks", std);
+                  }
+                }}
+                onBlur={() => {
+                  const num = parseInt(toStandardDigits(form.totalMarks), 10);
+                  if (isNaN(num) || num <= 0) {
+                    updateForm("totalMarks", "30");
+                  }
+                }}
+                placeholder="100"
+                type="text"
+                inputMode="numeric"
+              />
               <label className="text-sm font-medium">
                 Layout
                 <select value={form.layout} onChange={(event) => updateForm("layout", event.target.value as Paper["layout"])} className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm">
@@ -290,11 +308,35 @@ function ChoiceCard({ selected, icon: Icon, title, description, onClick }: { sel
   );
 }
 
-function TextField({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string }) {
+function TextField({
+  label,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  type = "text",
+  inputMode
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+}) {
   return (
     <label className="text-sm font-medium">
       {label}
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm" />
+      <input
+        type={type}
+        inputMode={inputMode}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm"
+      />
     </label>
   );
 }
