@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
+import { useAppModal } from "@/components/modal-provider";
 import type { Paper } from "@/lib/api-types";
 
 type DraftQuestion = {
@@ -88,6 +89,7 @@ export function McqSetDialog({
   onPreviewSet,
   onSaveBeforeExport
 }: McqSetDialogProps) {
+  const { showAlert } = useAppModal();
   const [activeTab, setActiveTab] = useState<string>("A");
   const [copiedKey, setCopiedKey] = useState(false);
 
@@ -225,7 +227,11 @@ export function McqSetDialog({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Set export failed:", err);
-      alert(err instanceof Error ? err.message : "Export failed. Please save questions first.");
+      showAlert({
+        title: "এক্সপোর্ট সমস্যা",
+        message: err instanceof Error ? err.message : "এক্সপোর্ট সম্পন্ন করা যায়নি। অনুগ্রহ করে প্রথমে প্রশ্নগুলো সেভ করুন।",
+        type: "error"
+      });
     } finally {
       setDownloadingKey(null);
     }
@@ -238,13 +244,31 @@ export function McqSetDialog({
       if (onSaveBeforeExport) {
         await onSaveBeforeExport();
       }
-      for (const setDef of SET_CONFIG) {
-        await downloadSetExport(format, setDef.key);
-        // Small delay to allow browser to trigger multiple downloads cleanly
-        await new Promise((r) => setTimeout(r, 800));
+      const response = await fetch(
+        `/api/backend/papers/${paper.id}/export/${format}?set=all&layout=${paper.layout}&questionsPerPage=${paper.questionsPerPage}&withAnswer=${setWithAnswer ? "true" : "false"}`
+      );
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => null);
+        throw new Error(errJson?.message || `Export failed with status ${response.status}`);
       }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      const baseName = (paper.name || "paper").trim().replace(/[\\/:*?"<>|]+/g, "_") || "question-paper";
+      const ansSuffix = setWithAnswer ? "-With-Answers" : "-Question-Paper";
+      anchor.download = `${baseName}-All-Sets${ansSuffix}.${format}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to download all sets:", err);
+      showAlert({
+        title: "এক্সপোর্ট সমস্যা",
+        message: err instanceof Error ? err.message : "এক্সপোর্ট সম্পন্ন করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।",
+        type: "error"
+      });
     } finally {
       setDownloadingAll(false);
     }

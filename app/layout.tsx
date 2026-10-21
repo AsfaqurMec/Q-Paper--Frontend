@@ -3,6 +3,7 @@ import "katex/dist/katex.min.css";
 import "./globals.css";
 
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
+import { ModalProvider } from "@/components/modal-provider";
 
 export const metadata: Metadata = {
   title: "Q-Paper",
@@ -28,8 +29,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="font-sans antialiased">
-        <GlobalLoadingScreen />
-        {children}
+        <ModalProvider>
+          <GlobalLoadingScreen />
+          {children}
+        </ModalProvider>
       </body>
     </html>
   );

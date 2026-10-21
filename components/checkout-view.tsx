@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { clientApi } from "@/lib/client-api";
-import type { PaymentOption, PaymentRequest, UserSession } from "@/lib/api-types";
+import type { PaymentOption, PaymentRequest, Plan, UserSession } from "@/lib/api-types";
 
 type PlanDetail = {
   code: "small" | "pro" | "ultra" | "diamond";
@@ -109,11 +109,13 @@ const PLAN_DATA: Record<"small" | "pro" | "ultra" | "diamond", PlanDetail> = {
 export function CheckoutView({
   user,
   initialOptions,
-  initialRequests = []
+  initialRequests = [],
+  initialPlans = []
 }: {
   user: UserSession;
   initialOptions: PaymentOption[];
   initialRequests?: PaymentRequest[];
+  initialPlans?: Plan[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -143,7 +145,43 @@ export function CheckoutView({
   const [myRequests, setMyRequests] = useState<PaymentRequest[]>(initialRequests);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const currentPlanInfo = PLAN_DATA[selectedPlan];
+  const dbPlan = initialPlans?.find((p) => p.code === selectedPlan);
+  const basePlanInfo = PLAN_DATA[selectedPlan];
+  const currentPlanInfo: PlanDetail = {
+    code: selectedPlan,
+    name: dbPlan ? `${dbPlan.name} Package` : basePlanInfo.name,
+    price: dbPlan ? dbPlan.price : basePlanInfo.price,
+    interval: dbPlan ? (dbPlan.interval === "month" ? "মাসিক (Monthly)" : "এককালীন") : basePlanInfo.interval,
+    badge: basePlanInfo.badge,
+    features: dbPlan
+      ? [
+          dbPlan.paperLimit >= 999999
+            ? "সম্পূর্ণ আনলিমিটেড প্রশ্নপত্র তৈরি (Unlimited Papers)"
+            : `সর্বোচ্চ ${dbPlan.paperLimit.toLocaleString("bn-BD")}টি প্রশ্নপত্র তৈরি (${dbPlan.paperLimit.toLocaleString()} Papers quota)`,
+          dbPlan.totalQuestionsLimit >= 999999
+            ? "সম্পূর্ণ আনলিমিটেড প্রশ্ন তৈরির লাইব্রেরি কোটা (Unlimited Questions)"
+            : `মোট ${dbPlan.totalQuestionsLimit.toLocaleString("bn-BD")}টি প্রশ্ন তৈরির লাইব্রেরি কোটা`,
+          dbPlan.exports.includes("docx")
+            ? "PDF ও Word (DOCS) উভয় ফরম্যাটে এক্সপোর্ট"
+            : "উচ্চ মানের PDF এক্সপোর্ট সুবিধা (PDF export)",
+          dbPlan.importQuestion
+            ? "AI ও ছবি/ডকুমেন্ট থেকে সরাসরি প্রশ্ন ইমপোর্ট (Import ON)"
+            : "প্রশ্ন ব্যাংক ও ৪-সেট ওএমআর প্রশ্ন জেনারেশন",
+          !dbPlan.watermark
+            ? "কোনো ওয়াটারমার্ক থাকবে না (Watermark Free)"
+            : "ওয়াটারমার্ক সহ প্রিন্ট",
+          dbPlan.branding
+            ? (dbPlan.code === "diamond" ? "স্কুল/কোচিং সেন্টারের নিজস্ব লোগো ও ফুল ব্র্যান্ডিং" : "প্রতিষ্ঠানের নিজস্ব নাম ও ব্র্যান্ডিং")
+            : "ডিভাইস যাচাইকরণ ও নিরাপদ অ্যাক্সেস"
+        ]
+      : basePlanInfo.features
+  };
+
+  const getPlanPrice = (code: "small" | "pro" | "ultra" | "diamond") => {
+    const p = initialPlans?.find((x) => x.code === code);
+    return p ? p.price : PLAN_DATA[code].price;
+  };
+
   const activeOption = paymentOptions.find((opt) => opt.id === selectedOptionId) || null;
 
   function copyToClipboard(text: string, id: string) {
@@ -314,7 +352,7 @@ export function CheckoutView({
                     }`}
                   >
                     <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
-                    Small (৳১০০)
+                    Small (৳{getPlanPrice("small").toLocaleString("bn-BD")})
                   </button>
                   <button
                     type="button"
@@ -326,7 +364,7 @@ export function CheckoutView({
                     }`}
                   >
                     <Zap className="h-3.5 w-3.5 text-blue-500" />
-                    Pro (৳৫০০)
+                    Pro (৳{getPlanPrice("pro").toLocaleString("bn-BD")})
                   </button>
                   <button
                     type="button"
@@ -338,7 +376,7 @@ export function CheckoutView({
                     }`}
                   >
                     <Sparkles className="h-3.5 w-3.5 text-purple-500" />
-                    Ultra (৳১,০০০)
+                    Ultra (৳{getPlanPrice("ultra").toLocaleString("bn-BD")})
                   </button>
                   <button
                     type="button"
@@ -350,7 +388,7 @@ export function CheckoutView({
                     }`}
                   >
                     <Crown className="h-3.5 w-3.5 text-cyan-500" />
-                    Diamond (৳৩,৫০০)
+                    Diamond (৳{getPlanPrice("diamond").toLocaleString("bn-BD")})
                   </button>
                 </div>
 

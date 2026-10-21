@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { clientApi } from "@/lib/client-api";
+import { useAppModal } from "@/components/modal-provider";
 import type { AdminUser, PaymentOption, PaymentRequest, PaymentRequestStatus } from "@/lib/api-types";
 
 export function AdminUserManagementView({
@@ -195,16 +196,26 @@ export function AdminUserManagementView({
     }
   }
 
+  const { showAlert, showConfirm } = useAppModal();
+
   // Delete Payment Option
-  async function handleDeleteOption(id: string) {
-    if (!confirm("আপনি কি নিশ্চিতভাবে এই পেমেন্ট অপশনটি মুছে ফেলতে চান?")) return;
-    try {
-      await clientApi.adminDeletePaymentOption(id);
-      setOptions((prev) => prev.filter((o) => o.id !== id));
-      showMessage("success", "পেমেন্ট অপশন মুছে ফেলা হয়েছে।");
-    } catch (err: any) {
-      showMessage("error", err?.message || "মুছে ফেলতে সমস্যা হয়েছে");
-    }
+  function handleDeleteOption(id: string) {
+    showConfirm({
+      title: "পেমেন্ট অপশন মুছে ফেলুন (Delete Payment Option)",
+      message: "আপনি কি নিশ্চিতভাবে এই পেমেন্ট অপশনটি মুছে ফেলতে চান?",
+      confirmText: "মুছে ফেলুন",
+      cancelText: "বাতিল",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await clientApi.adminDeletePaymentOption(id);
+          setOptions((prev) => prev.filter((o) => o.id !== id));
+          showMessage("success", "পেমেন্ট অপশন মুছে ফেলা হয়েছে।");
+        } catch (err: any) {
+          showMessage("error", err?.message || "মুছে ফেলতে সমস্যা হয়েছে");
+        }
+      }
+    });
   }
 
   // Open Create Option Modal
@@ -728,16 +739,23 @@ export function AdminUserManagementView({
                             size="sm"
                             variant="outline"
                             className="h-7 px-2 text-xs"
-                            onClick={async () => {
+                            onClick={() => {
                               const newRole = u.role === "admin" ? "user" : "admin";
-                              if (!confirm(`আপনি কি নিশ্চিতভাবে এই রোল পরিবর্তন করতে চান? (${newRole.toUpperCase()})`)) return;
-                              try {
-                                await clientApi.adminUpdateUserRole(u.id, newRole);
-                                setUsers((prev) => prev.map((usr) => (usr.id === u.id ? { ...usr, role: newRole } : usr)));
-                                showMessage("success", `রোল পরিবর্তন সম্পন্ন: ${newRole.toUpperCase()}`);
-                              } catch (err: any) {
-                                showMessage("error", err?.message || "রোল পরিবর্তন ব্যর্থ");
-                              }
+                              showConfirm({
+                                title: "রোল পরিবর্তন (Change Role)",
+                                message: `আপনি কি নিশ্চিতভাবে এই রোল পরিবর্তন করতে চান? (${newRole.toUpperCase()})`,
+                                confirmText: "পরিবর্তন করুন",
+                                cancelText: "বাতিল",
+                                onConfirm: async () => {
+                                  try {
+                                    await clientApi.adminUpdateUserRole(u.id, newRole);
+                                    setUsers((prev) => prev.map((usr) => (usr.id === u.id ? { ...usr, role: newRole } : usr)));
+                                    showMessage("success", `রোল পরিবর্তন সম্পন্ন: ${newRole.toUpperCase()}`);
+                                  } catch (err: any) {
+                                    showMessage("error", err?.message || "রোল পরিবর্তন ব্যর্থ");
+                                  }
+                                }
+                              });
                             }}
                           >
                             রোল টগল

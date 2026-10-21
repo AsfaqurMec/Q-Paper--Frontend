@@ -18,6 +18,7 @@ import type {
   SupportTicket,
   PaymentOption,
   PaymentRequest,
+  Plan,
   UserSession
 } from "@/lib/api-types";
 
@@ -77,6 +78,8 @@ export async function fetchPublicSharedPaper(token: string, password?: string): 
 }
 
 export const clientApi = {
+  plans: () =>
+    apiRequest<Plan[]>("/api/plans"),
   getProfile: () =>
     apiRequest<UserSession>("/api/auth/profile"),
   updateProfile: (data: { name?: string; phone?: string; institute?: string }) =>

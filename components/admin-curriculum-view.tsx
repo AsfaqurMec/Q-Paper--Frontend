@@ -37,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { useAppModal } from "@/components/modal-provider";
 import { clientApi } from "@/lib/client-api";
 import type {
   AcademicClass,
@@ -64,6 +65,7 @@ export function AdminCurriculumView({
   initialStats?: CurriculumStats | null;
   initialTree?: ClassHierarchy[];
 }) {
+  const { showConfirm } = useAppModal();
   const [activeTab, setActiveTab] = useState<TabMode>("classes");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -328,16 +330,24 @@ export function AdminCurriculumView({
     }
   }
 
-  async function handleDeleteClass(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete class "${name}"? This action cannot be undone.`)) return;
-    try {
-      await clientApi.deleteAcademicClass(id);
-      setClasses((prev) => prev.filter((c) => c.id !== id));
-      showMessage("success", `Class "${name}" deleted successfully`);
-      reloadAllData();
-    } catch (err: any) {
-      showMessage("error", err?.message || "Failed to delete class");
-    }
+  function handleDeleteClass(id: string, name: string) {
+    showConfirm({
+      title: "শ্রেণি মুছে ফেলুন (Delete Class)",
+      message: `আপনি কি নিশ্চিত যে "${name}" শ্রেণিটি মুছে ফেলতে চান? এই অ্যাকশনটি ফিরিয়ে আনা যাবে না।`,
+      confirmText: "মুছে ফেলুন",
+      cancelText: "বাতিল",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await clientApi.deleteAcademicClass(id);
+          setClasses((prev) => prev.filter((c) => c.id !== id));
+          showMessage("success", `Class "${name}" deleted successfully`);
+          reloadAllData();
+        } catch (err: any) {
+          showMessage("error", err?.message || "Failed to delete class");
+        }
+      }
+    });
   }
 
   // ==========================================
@@ -423,16 +433,24 @@ export function AdminCurriculumView({
     }
   }
 
-  async function handleDeleteSubject(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete subject "${name}"?`)) return;
-    try {
-      await clientApi.deleteSubject(id);
-      setSubjects((prev) => prev.filter((s) => s.id !== id));
-      showMessage("success", `Subject "${name}" deleted successfully`);
-      reloadAllData();
-    } catch (err: any) {
-      showMessage("error", err?.message || "Failed to delete subject");
-    }
+  function handleDeleteSubject(id: string, name: string) {
+    showConfirm({
+      title: "বিষয় মুছে ফেলুন (Delete Subject)",
+      message: `আপনি কি নিশ্চিত যে "${name}" বিষয়টি মুছে ফেলতে চান? এর অধীনে থাকা সকল প্রশ্ন ও অধ্যায় প্রভাবিত হতে পারে।`,
+      confirmText: "মুছে ফেলুন",
+      cancelText: "বাতিল",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await clientApi.deleteSubject(id);
+          setSubjects((prev) => prev.filter((s) => s.id !== id));
+          showMessage("success", `Subject "${name}" deleted successfully`);
+          reloadAllData();
+        } catch (err: any) {
+          showMessage("error", err?.message || "Failed to delete subject");
+        }
+      }
+    });
   }
 
   // ==========================================
@@ -528,16 +546,24 @@ export function AdminCurriculumView({
     }
   }
 
-  async function handleDeleteChapter(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete chapter "${name}"?`)) return;
-    try {
-      await clientApi.deleteChapter(id);
-      setChapters((prev) => prev.filter((ch) => ch.id !== id));
-      showMessage("success", `Chapter "${name}" deleted successfully`);
-      reloadAllData();
-    } catch (err: any) {
-      showMessage("error", err?.message || "Failed to delete chapter");
-    }
+  function handleDeleteChapter(id: string, name: string) {
+    showConfirm({
+      title: "অধ্যায় মুছে ফেলুন (Delete Chapter)",
+      message: `আপনি কি নিশ্চিত যে "${name}" অধ্যায়টি মুছে ফেলতে চান?`,
+      confirmText: "মুছে ফেলুন",
+      cancelText: "বাতিল",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await clientApi.deleteChapter(id);
+          setChapters((prev) => prev.filter((ch) => ch.id !== id));
+          showMessage("success", `Chapter "${name}" deleted successfully`);
+          reloadAllData();
+        } catch (err: any) {
+          showMessage("error", err?.message || "Failed to delete chapter");
+        }
+      }
+    });
   }
 
   // Tree toggle helpers

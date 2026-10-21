@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clientApi } from "@/lib/client-api";
+import { ConfirmModal } from "@/components/confirm-modal";
 import type { Paper, SharedLink } from "@/lib/api-types";
 
 export function ShareLinksView({ initialPapers, initialLinks }: { initialPapers: Paper[]; initialLinks: SharedLink[] }) {
@@ -19,6 +20,7 @@ export function ShareLinksView({ initialPapers, initialLinks }: { initialPapers:
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   async function handleCreate(e: React.FormEvent) {
@@ -47,8 +49,9 @@ export function ShareLinksView({ initialPapers, initialLinks }: { initialPapers:
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("আপনি কি নিশ্চিত যে এই শেয়ার লিংকটি বাতিল করতে চান?")) return;
+  async function handleConfirmDelete() {
+    if (!deleteTargetId) return;
+    const id = deleteTargetId;
     try {
       setDeleteLoading(id);
       await clientApi.deleteSharedLink(id);
@@ -58,6 +61,7 @@ export function ShareLinksView({ initialPapers, initialLinks }: { initialPapers:
       setStatusMsg({ type: "error", text: err?.message || "লিংক বাতিল করতে ব্যর্থ" });
     } finally {
       setDeleteLoading(null);
+      setDeleteTargetId(null);
     }
   }
 
@@ -204,7 +208,7 @@ export function ShareLinksView({ initialPapers, initialLinks }: { initialPapers:
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    onClick={() => handleDelete(link.id)}
+                    onClick={() => setDeleteTargetId(link.id)}
                     disabled={deleteLoading === link.id}
                     title="লিংক বাতিল করুন"
                   >
@@ -224,6 +228,18 @@ export function ShareLinksView({ initialPapers, initialLinks }: { initialPapers:
           )}
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        open={Boolean(deleteTargetId)}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={handleConfirmDelete}
+        title="শেয়ার লিংক বাতিল করুন"
+        message="আপনি কি নিশ্চিত যে এই শেয়ার লিংকটি বাতিল করতে চান? লিংকটি বাতিল করা হলে এই লিংকের মাধ্যমে প্রশ্নপত্র আর দেখা যাবে না।"
+        confirmText="বাতিল করুন"
+        cancelText="ফিরে যান"
+        variant="danger"
+        loading={Boolean(deleteLoading)}
+      />
     </div>
   );
 }

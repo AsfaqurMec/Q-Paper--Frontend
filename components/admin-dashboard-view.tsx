@@ -39,6 +39,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, clientApi } from "@/lib/client-api";
+import { useAppModal } from "@/components/modal-provider";
 import { AdminCurriculumView } from "@/components/admin-curriculum-view";
 import { AdminUserManagementView } from "@/components/admin-user-management-view";
 import type { AdminDashboard, AdminPaperItem, AdminUser, ClassHierarchy, PaymentOption, PaymentRequest, QuestionImportResult, SupportTicket } from "@/lib/api-types";
@@ -79,6 +80,7 @@ export function AdminDashboardView({
       : "overview";
 
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "papers" | "bank" | "curriculum" | "tickets" | "diagnostics">(initialTab);
+  const { showAlert, showConfirm } = useAppModal();
 
   // Users state
   const [users, setUsers] = useState<AdminUser[]>(initialUsers);
@@ -365,44 +367,66 @@ export function AdminDashboardView({
   }
 
   // Handle User Role Toggle
-  async function handleRoleToggle(userId: string, currentRole: "user" | "admin") {
+  function handleRoleToggle(userId: string, currentRole: "user" | "admin") {
     const newRole = currentRole === "admin" ? "user" : "admin";
-    if (!confirm(`Are you sure you want to change this user's role to ${newRole.toUpperCase()}?`)) return;
-
-    try {
-      await clientApi.adminUpdateUserRole(userId, newRole);
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      showMessage("success", `User role changed to ${newRole.toUpperCase()}`);
-    } catch (err: any) {
-      showMessage("error", err?.message || "Failed to update role");
-    }
+    showConfirm({
+      title: "রোল পরিবর্তন (Change Role)",
+      message: `আপনি কি নিশ্চিত যে এই ব্যবহারকারীর রোল ${newRole.toUpperCase()} এ পরিবর্তন করতে চান?`,
+      confirmText: "পরিবর্তন করুন",
+      cancelText: "বাতিল",
+      onConfirm: async () => {
+        try {
+          await clientApi.adminUpdateUserRole(userId, newRole);
+          setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+          showMessage("success", `User role changed to ${newRole.toUpperCase()}`);
+        } catch (err: any) {
+          showMessage("error", err?.message || "Failed to update role");
+        }
+      }
+    });
   }
 
   // Handle User Delete
-  async function handleDeleteUser(userId: string) {
-    if (!confirm("Are you sure you want to permanently delete this user account? This cannot be undone.")) return;
-    try {
-      await clientApi.adminDeleteUser(userId);
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-      showMessage("success", "User account deleted successfully");
-    } catch (err: any) {
-      showMessage("error", err?.message || "Failed to delete user");
-    }
+  function handleDeleteUser(userId: string) {
+    showConfirm({
+      title: "ব্যবহারকারী মুছে ফেলুন (Delete User)",
+      message: "আপনি কি নিশ্চিত যে এই ব্যবহারকারীর অ্যাকাউন্ট চিরতরে মুছে ফেলতে চান? এটি পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।",
+      confirmText: "মুছে ফেলুন",
+      cancelText: "বাতিল",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await clientApi.adminDeleteUser(userId);
+          setUsers((prev) => prev.filter((u) => u.id !== userId));
+          showMessage("success", "User account deleted successfully");
+        } catch (err: any) {
+          showMessage("error", err?.message || "Failed to delete user");
+        }
+      }
+    });
   }
 
   // Handle Paper Delete
-  async function handleDeletePaper(paperId: string) {
-    if (!confirm("Are you sure you want to delete this question paper and its shared links?")) return;
-    try {
-      setDeletingPaperId(paperId);
-      await clientApi.adminDeletePaper(paperId);
-      setPapers((prev) => prev.filter((p) => p.id !== paperId));
-      showMessage("success", "Paper and associated links removed");
-    } catch (err: any) {
-      showMessage("error", err?.message || "Failed to delete paper");
-    } finally {
-      setDeletingPaperId(null);
-    }
+  function handleDeletePaper(paperId: string) {
+    showConfirm({
+      title: "প্রশ্নপত্র মুছে ফেলুন (Delete Paper)",
+      message: "আপনি কি নিশ্চিত যে এই প্রশ্নপত্র এবং এর সাথে সম্পর্কিত সকল শেয়ার লিংক মুছে ফেলতে চান?",
+      confirmText: "মুছে ফেলুন",
+      cancelText: "বাতিল",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          setDeletingPaperId(paperId);
+          await clientApi.adminDeletePaper(paperId);
+          setPapers((prev) => prev.filter((p) => p.id !== paperId));
+          showMessage("success", "Paper and associated links removed");
+        } catch (err: any) {
+          showMessage("error", err?.message || "Failed to delete paper");
+        } finally {
+          setDeletingPaperId(null);
+        }
+      }
+    });
   }
 
   // Handle Admin Reply to Ticket

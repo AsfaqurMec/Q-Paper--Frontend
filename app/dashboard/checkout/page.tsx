@@ -5,9 +5,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardCheckoutPage() {
   const user = await requireUser();
-  const [paymentOptions, myRequests] = await Promise.all([
+  const [paymentOptions, myRequests, plans] = await Promise.all([
     api.paymentOptions().catch(() => []),
-    api.myPaymentRequests().catch(() => [])
+    api.myPaymentRequests().catch(() => []),
+    api.plans().catch(() => [])
   ]);
 
   return (
@@ -15,6 +16,7 @@ export default async function DashboardCheckoutPage() {
       user={user}
       initialOptions={paymentOptions}
       initialRequests={myRequests}
+      initialPlans={plans}
     />
   );
 }

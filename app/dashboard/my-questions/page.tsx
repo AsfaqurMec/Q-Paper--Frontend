@@ -53,6 +53,7 @@ export default async function MyQuestionsPage() {
                 questionType={paper.questions[0]?.type}
                 userPlan={user?.plan || "free"}
                 userRole={user?.role || "user"}
+                activeSet={paper.setName}
               />
             </div>
           ))}

@@ -22,10 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useAppModal } from "@/components/modal-provider";
 import { clientApi } from "@/lib/client-api";
 import type { SupportTicket, TicketMessage } from "@/lib/api-types";
 
 export function SupportTicketsView({ initialTickets }: { initialTickets: SupportTicket[] }) {
+  const { showAlert } = useAppModal();
   const [tickets, setTickets] = useState<SupportTicket[]>(initialTickets);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(initialTickets[0] || null);
   const [activeTab, setActiveTab] = useState<"all" | "open" | "resolved">("all");
@@ -221,7 +223,11 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
       setSelectedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (err: any) {
-      alert(err?.message || "স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে");
+      showAlert({
+        title: "স্ট্যাটাস পরিবর্তন ত্রুটি",
+        message: err?.message || "স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে",
+        type: "error"
+      });
     }
   }
 

@@ -8,21 +8,26 @@ import { Edit3, FileDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
 import { ExportPaperModal } from "@/components/export-paper-modal";
+import { ConfirmModal } from "@/components/confirm-modal";
 
 export function PaperActions({
   paperId,
   paperName,
   questionType,
   userPlan = "free",
-  userRole = "user"
+  userRole = "user",
+  activeSet
 }: {
   paperId: string;
   paperName: string;
   questionType?: "mcq" | "cq" | "both";
   userPlan?: string;
   userRole?: string;
+  activeSet?: string;
 }) {
   const router = useRouter();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [exportModal, setExportModal] = useState<{ open: boolean; format: "pdf" | "docx" }>({
     open: false,
     format: "pdf"
@@ -33,10 +38,15 @@ export function PaperActions({
       ? `/dashboard/papers/${paperId}/questions/${questionType}`
       : `/dashboard/papers/${paperId}/questions`;
 
-  async function deletePaper() {
-    if (!window.confirm(`Delete "${paperName}"?`)) return;
-    await apiRequest(`/api/papers/${paperId}`, { method: "DELETE" });
-    router.refresh();
+  async function handleConfirmDelete() {
+    try {
+      setIsDeleting(true);
+      await apiRequest(`/api/papers/${paperId}`, { method: "DELETE" });
+      router.refresh();
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+    }
   }
 
   return (
@@ -66,11 +76,23 @@ export function PaperActions({
           <FileDown className="h-4 w-4" />
           DOCX
         </Button>
-        <Button variant="ghost" size="sm" onClick={deletePaper}>
+        <Button variant="ghost" size="sm" onClick={() => setDeleteModalOpen(true)} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20">
           <Trash2 className="h-4 w-4" />
           Delete
         </Button>
       </div>
+
+      <ConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="প্রশ্নপত্র মুছে ফেলুন"
+        message={`আপনি কি নিশ্চিতভাবে "${paperName}" প্রশ্নপত্রটি মুছে ফেলতে চান? এটি মুছে ফেললে আর পুনরুদ্ধার করা যাবে না।`}
+        confirmText="মুছে ফেলুন"
+        cancelText="বাতিল"
+        variant="danger"
+        loading={isDeleting}
+      />
 
       <ExportPaperModal
         open={exportModal.open}
@@ -78,6 +100,7 @@ export function PaperActions({
         paperId={paperId}
         paperName={paperName}
         defaultFormat={exportModal.format}
+        activeSet={activeSet}
         userPlan={userPlan}
       />
     </>
