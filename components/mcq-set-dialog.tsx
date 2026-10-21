@@ -263,7 +263,7 @@ export function McqSetDialog({
           <meta charset="utf-8" />
           <title>${paper.name} - OMR Answer Key Matrix</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 28px; color: #0f172a; margin: 0; }
+            body { font-family: 'SolaimanLipi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 28px; color: #0f172a; margin: 0; }
             .header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 16px; }
             h1 { font-size: 20px; margin: 0 0 6px 0; color: #0f172a; }
             .meta { font-size: 13px; color: #475569; margin: 0; }

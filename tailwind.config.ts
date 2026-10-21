@@ -9,6 +9,10 @@ const config: Config = {
       screens: {
         xs: "480px"
       },
+      fontFamily: {
+        sans: ["SolaimanLipi", "Noto Sans Bengali", "Segoe UI", "system-ui", "sans-serif"],
+        bengali: ["SolaimanLipi", "Noto Sans Bengali", "sans-serif"]
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

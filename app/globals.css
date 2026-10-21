@@ -2,6 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'SolaimanLipi';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/solaimanlipi-normal-v1.0.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'SolaimanLipi';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/solaimanlipi-normal-v1.0.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'SolaimanLipi';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/solaimanlipi-bold-v1.0.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'SolaimanLipi';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/solaimanlipi-bold-v1.0.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'SolaimanLipi';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/solaimanlipi-bold-v1.0.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'SolaimanLipi';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/solaimanlipi-bold-v1.0.woff2') format('woff2');
+}
+
 :root {
   --background: 210 20% 98%;
   --foreground: 222 34% 12%;
@@ -51,11 +99,23 @@ select option {
   border-color: hsl(var(--border));
 }
 
+html {
+  font-family: 'SolaimanLipi', var(--font-sans), 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
+}
+
 body {
   min-height: 100vh;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: var(--font-sans), "Kalpurush", "SolaimanLipi", "Noto Sans Bengali", "Segoe UI", system-ui, sans-serif;
+  font-family: 'SolaimanLipi', var(--font-sans), 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input, button, select, textarea, optgroup, option {
+  font-family: 'SolaimanLipi', var(--font-sans), 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
 }
 
 .paper-preview {

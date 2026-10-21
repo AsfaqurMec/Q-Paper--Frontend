@@ -314,7 +314,7 @@ export function CheckoutView({
                     }`}
                   >
                     <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
-                    Small (৳২৫০)
+                    Small (৳১০০)
                   </button>
                   <button
                     type="button"

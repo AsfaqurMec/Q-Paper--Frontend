@@ -13,17 +13,21 @@ export function PlanActionButton({
 }) {
   if (current) {
     return (
-      <Button className="w-full" variant="outline" disabled>
-        <CheckCircle2 className="h-4 w-4 text-emerald-600 mr-1.5" />
-        বর্তমান সক্রিয় প্যাকেজ (Active)
+      <Button
+        className="w-full h-11 rounded-xl font-bold bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 cursor-default shadow-xs flex items-center justify-center gap-1.5"
+        variant="outline"
+        disabled
+      >
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+        <span>বর্তমান সক্রিয় প্যাকেজ</span>
       </Button>
     );
   }
 
   if (planCode === "free") {
     return (
-      <Button className="w-full" variant="outline" disabled>
-        ডিফল্ট ফ্রি প্ল্যান (Free Tier)
+      <Button className="w-full h-11 rounded-xl font-medium" variant="outline" disabled>
+        ফ্রি ট্রায়াল (Free Tier)
       </Button>
     );
   }
@@ -34,30 +38,30 @@ export function PlanActionButton({
   const isSmall = normalizedCode === "small";
 
   const buttonStyle = isDiamond
-    ? "bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white shadow-cyan-500/25"
+    ? "bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white shadow-md shadow-cyan-600/25 active:scale-[0.98]"
     : isUltra
-    ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20"
+    ? "bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20 active:scale-[0.98]"
     : isSmall
-    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
-    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20";
+    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-[0.98]"
+    : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 active:scale-[0.98]";
 
   const buttonLabel = isDiamond
-    ? "প্যাকেজটি কিনুন (Diamond - ৳৩,৫০০)"
+    ? "Diamond প্যাকেজ নিন"
     : isUltra
-    ? "প্যাকেজটি কিনুন (Ultra - ৳১,০০০)"
+    ? "Ultra প্যাকেজ নিন"
     : isSmall
-    ? "প্যাকেজটি কিনুন (Small - ৳২৫০)"
-    : "প্যাকেজটি কিনুন (Pro - ৳৫০০)";
+    ? "Small প্যাকেজ নিন"
+    : "Pro প্যাকেজ নিন";
 
   return (
     <Button
       asChild
-      className={`w-full gap-2 font-medium shadow-sm transition-all cursor-pointer ${buttonStyle}`}
+      className={`w-full h-11 rounded-xl gap-2 font-bold text-sm tracking-wide shadow-sm transition-all group cursor-pointer ${buttonStyle}`}
     >
       <Link href={`/dashboard/checkout?plan=${normalizedCode}`}>
-        <ShoppingCart className="h-4 w-4" />
+        <ShoppingCart className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
         <span>{buttonLabel}</span>
-        <ArrowRight className="h-4 w-4 ml-auto" />
+        <ArrowRight className="h-4 w-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
       </Link>
     </Button>
   );
