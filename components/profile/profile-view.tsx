@@ -11,9 +11,11 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  Crown,
   Eye,
   EyeOff,
   FileText,
+  Infinity as InfinityIcon,
   KeyRound,
   Layers,
   Lock,
@@ -32,6 +34,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { clientApi } from "@/lib/client-api";
+import { formatBnNumber } from "@/lib/utils";
+import { DEFAULT_PLANS } from "@/lib/plan-constants";
 import type { DashboardData, PaymentRequest, Plan, UserSession } from "@/lib/api-types";
 
 type ProfileViewProps = {
@@ -40,6 +44,7 @@ type ProfileViewProps = {
   dashboardStats: DashboardData["stats"];
   myRequests: PaymentRequest[];
 };
+
 
 export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: ProfileViewProps) {
   const [user, setUser] = useState<UserSession>(initialUser);
@@ -69,37 +74,26 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Current Plan
+  // Current Plan from Database / API
+  const planList = Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS;
   const activePlanCode = user.plan || "free";
-  const currentPlan = plans.find((p) => p.code === activePlanCode) || plans[0] || {
-    code: "free",
-    name: "Free",
-    price: 0,
-    interval: "month",
-    paperLimit: 2,
-    questionLimit: 30,
-    totalQuestionsLimit: 60,
-    exports: ["pdf"],
-    importQuestion: false,
-    watermark: true,
-    questionBank: false,
-    branding: false,
-    randomGenerator: false,
-    multipleVersions: false
-  };
+  const currentPlan = planList.find((p) => p.code === activePlanCode) || planList[0];
 
   const pendingRequest = myRequests.find((r) => r.status === "pending");
 
   // Usage calculations
   const totalPapersCreated = dashboardStats.totalPapers || 0;
   const paperLimit = currentPlan.paperLimit || 2;
-  const papersPercent = Math.min(100, Math.round((totalPapersCreated / paperLimit) * 100));
+  const isUnlimitedPapers = paperLimit >= 999999;
+  const papersPercent = isUnlimitedPapers ? 0 : Math.min(100, Math.round((totalPapersCreated / paperLimit) * 100));
 
   const totalQuestionsCreated = dashboardStats.totalQuestions || 0;
   const totalQuestionsLimit = currentPlan.totalQuestionsLimit || 60;
-  const questionsPercent = Math.min(100, Math.round((totalQuestionsCreated / totalQuestionsLimit) * 100));
+  const isUnlimitedQuestions = totalQuestionsLimit >= 999999;
+  const questionsPercent = isUnlimitedQuestions ? 0 : Math.min(100, Math.round((totalQuestionsCreated / totalQuestionsLimit) * 100));
 
   const questionsPerPaperLimit = currentPlan.questionLimit || 30;
+  const isUnlimitedPerPaper = questionsPerPaperLimit >= 999999;
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -677,111 +671,282 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
         </div>
       )}
 
-      {/* TAB 3: PACKAGE DETAILS & FEATURES */}
+      {/* TAB 3: PACKAGE DETAILS & FEATURES (DYNAMIC FROM DB) */}
       {activeTab === "plan" && (
         <div className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            {plans.map((p) => {
-              const isCurrent = p.code === activePlanCode;
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                সাবস্ক্রিপশন প্যাকেজসমূহ
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                সরাসরি ডেটাবেস থেকে প্রাপ্ত বর্তমান প্যাকেজের তালিকা ও লিমিট
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/60 border text-xs text-muted-foreground shrink-0 font-medium self-start sm:self-auto">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>রিয়েল-টাইম প্যাকেজ ডেটা</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 items-stretch">
+            {planList.map((p) => {
+              const isSmall = p.code === "small";
+              const isPro = p.code === "pro";
+              const isUltra = p.code === "ultra";
+              const isDiamond = p.code === "diamond";
+              const isFree = p.code === "free";
+              const isCurrent = activePlanCode === p.code || (p.code === "pro" && activePlanCode === "standard");
+
               return (
-                <Card key={p.code} className={`relative flex flex-col ${isCurrent ? "border-primary ring-2 ring-primary/20 shadow-md" : "border"}`}>
-                  {isCurrent && (
-                    <div className="absolute -top-3 left-4">
-                      <Badge className="bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider">
-                        Current Package
-                      </Badge>
+                <div
+                  key={p.code}
+                  className={`relative rounded-3xl p-5 sm:p-6 lg:p-5 flex flex-col justify-between transition-all duration-300 ${
+                    isCurrent
+                      ? "bg-card border-2 border-emerald-600 shadow-xl ring-4 ring-emerald-500/20 z-10"
+                      : isDiamond
+                      ? "bg-card border-2 border-cyan-500 shadow-xl shadow-cyan-600/15 ring-2 ring-cyan-500/10 hover:shadow-2xl"
+                      : isSmall
+                      ? "bg-card border-2 border-emerald-500 shadow-lg shadow-emerald-600/10 ring-2 ring-emerald-500/10 hover:shadow-xl"
+                      : isUltra
+                      ? "bg-card border-2 border-purple-500/60 shadow-lg hover:border-purple-500 hover:shadow-xl"
+                      : isPro
+                      ? "bg-card border-2 border-blue-500/60 shadow-lg hover:border-blue-500 hover:shadow-xl"
+                      : "bg-card border border-border shadow-xs hover:border-border/80 hover:shadow-md"
+                  }`}
+                >
+                  {/* TOP STATUS BADGES */}
+                  {isCurrent ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[11px] font-black px-4 py-0.5 rounded-full shadow-md flex items-center gap-1.5 z-10 whitespace-nowrap">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>বর্তমান প্যাকেজ</span>
                     </div>
-                  )}
+                  ) : isSmall ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[11px] font-black px-3.5 py-0.5 rounded-full shadow-md flex items-center gap-1 z-10 whitespace-nowrap">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>সেরা ভ্যালু</span>
+                    </div>
+                  ) : isPro ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[11px] font-black px-3.5 py-0.5 rounded-full shadow-md flex items-center gap-1 z-10 whitespace-nowrap">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>জনপ্রিয় চয়েস</span>
+                    </div>
+                  ) : isUltra ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[11px] font-bold px-3.5 py-0.5 rounded-full shadow-sm z-10 whitespace-nowrap">
+                      কোচিংয়ের পছন্দ
+                    </div>
+                  ) : isDiamond ? (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[11px] font-black px-3.5 py-0.5 rounded-full shadow-md flex items-center gap-1 z-10 whitespace-nowrap">
+                      <Crown className="w-3.5 h-3.5" />
+                      <span>আনলিমিটেড সুপার</span>
+                    </div>
+                  ) : null}
 
-                  <CardHeader className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">{p.name}</CardTitle>
-                      <Badge variant={isCurrent ? "default" : "outline"} className="text-xs uppercase font-semibold">
-                        {p.code === "free" ? "Trial" : "Premium"}
-                      </Badge>
-                    </div>
-                    <CardDescription className="text-xs">
-                      {p.code === "free" ? "Free trial tier" : p.code === "pro" ? "Professional educator package" : "All-inclusive complete package"}
-                    </CardDescription>
-                    <div className="mt-3 flex items-baseline gap-1 text-3xl font-bold">
-                      ৳{p.price}
-                      <span className="text-xs font-normal text-muted-foreground">/{p.interval}</span>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 flex flex-col justify-between space-y-6">
-                    <div className="space-y-2.5 text-xs">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span><strong>{p.paperLimit.toLocaleString()}</strong> Question Papers limit</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span>Up to <strong>{p.questionLimit}</strong> questions per paper</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span>Total quota: <strong>{p.totalQuestionsLimit.toLocaleString()}</strong> questions</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span>PDF Export ({p.exports.includes("docx") ? "PDF & Word DOCX" : "PDF Only"})</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {p.importQuestion ? (
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                        ) : (
-                          <X className="h-4 w-4 text-rose-500 shrink-0" />
-                        )}
-                        <span className={p.importQuestion ? "" : "text-muted-foreground"}>
-                          Question Import (Word / PDF / OCR)
+                  <div>
+                    {/* Plan Header */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xl sm:text-2xl font-black text-foreground capitalize">
+                          {p.name}
+                        </h3>
+                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-muted px-2 py-0.5 rounded-md">
+                          {p.interval === "month" ? "মাসিক" : p.interval}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+
+                      <p className="text-xs text-muted-foreground mt-1 min-h-[32px] leading-relaxed">
+                        {isFree && "সফটওয়্যার পরীক্ষা ও ফ্রি ট্রায়াল"}
+                        {isSmall && "ব্যক্তিগত শিক্ষক ও ছোট ব্যাচের জন্য সেরা"}
+                        {isPro && "মাঝারি কোচিং ও পূর্ণাঙ্গ শিক্ষাপ্রতিষ্ঠান"}
+                        {isUltra && "বড় কোচিং ও ওয়ার্ড (.docx) এক্সপোর্ট"}
+                        {isDiamond && "সম্পূর্ণ আনলিমিটেড পেপার ও প্রশ্ন, ভিআইপি"}
+                      </p>
+                    </div>
+
+                    {/* Price Block */}
+                    <div className="flex items-baseline gap-1 my-4 pb-4 border-b border-border/60">
+                      <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                        ৳{formatBnNumber(p.price)}
+                      </span>
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        / {p.price === 0 ? "ফ্রি ট্রায়াল" : p.interval === "month" ? "মাসিক" : "মেয়াদ"}
+                      </span>
+                    </div>
+
+                    {/* Core Capacity Box from Database */}
+                    <div
+                      className={`rounded-2xl p-4 mb-5 space-y-2.5 border ${
+                        isDiamond
+                          ? "bg-cyan-50/80 dark:bg-cyan-950/30 border-cyan-200/80 dark:border-cyan-800 text-cyan-950 dark:text-cyan-200"
+                          : isSmall
+                          ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200"
+                          : isUltra
+                          ? "bg-purple-50/80 dark:bg-purple-950/30 border-purple-200/80 dark:border-purple-800 text-purple-950 dark:text-purple-200"
+                          : isPro
+                          ? "bg-blue-50/80 dark:bg-blue-950/30 border-blue-200/80 dark:border-blue-800 text-blue-950 dark:text-blue-200"
+                          : "bg-muted/40 border-border/60 text-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-black">
+                        <span>মোট প্রশ্নপত্র:</span>
+                        <span
+                          className={
+                            isDiamond
+                              ? "text-cyan-700 dark:text-cyan-300 font-extrabold text-sm"
+                              : isSmall
+                              ? "text-emerald-700 dark:text-emerald-400 font-extrabold text-sm"
+                              : "font-bold text-foreground"
+                          }
+                        >
+                          {p.paperLimit >= 999999 ? "আনলিমিটেড পেপার" : `${formatBnNumber(p.paperLimit)} টি পেপার`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs font-black">
+                        <span>সর্বোচ্চ প্রশ্ন লিমিট:</span>
+                        <span
+                          className={
+                            isDiamond
+                              ? "text-cyan-700 dark:text-cyan-300 font-extrabold text-sm"
+                              : isSmall
+                              ? "text-emerald-700 dark:text-emerald-400 font-extrabold text-sm"
+                              : "font-bold text-foreground"
+                          }
+                        >
+                          {p.totalQuestionsLimit >= 999999 ? "আনলিমিটেড কোটা" : `${formatBnNumber(p.totalQuestionsLimit)} টি`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-muted-foreground font-medium pt-1 border-t border-border/40">
+                        <span>প্রতি পেপারে সর্বোচ্চ:</span>
+                        <span className="font-semibold text-foreground">
+                          {p.questionLimit >= 999999 ? "আনলিমিটেড প্রশ্ন" : `${formatBnNumber(p.questionLimit)} টি প্রশ্ন`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Dynamic Feature Checklist from DB */}
+                    <div className="space-y-3 text-xs text-foreground/90 mb-6">
+                      {/* Watermark */}
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                        <span className="font-semibold text-foreground">
+                          {p.watermark ? "ওয়াটারমার্ক সহ প্রিভিউ" : "কোনো ওয়াটারমার্ক নেই (ক্লিন PDF)"}
+                        </span>
+                      </div>
+
+                      {/* Question Bank */}
+                      <div className="flex items-start gap-2.5">
                         {p.questionBank ? (
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
                         ) : (
-                          <X className="h-4 w-4 text-rose-500 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 mt-0.5">
+                            <X className="w-3 h-3 stroke-[3]" />
+                          </div>
                         )}
-                        <span className={p.questionBank ? "" : "text-muted-foreground"}>Question Bank Access</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {!p.watermark ? (
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                        ) : (
-                          <X className="h-4 w-4 text-amber-500 shrink-0" />
-                        )}
-                        <span className={!p.watermark ? "" : "text-amber-700 dark:text-amber-400"}>
-                          {!p.watermark ? "No Watermark (Clean Exam Paper)" : "Includes ExamCraft Watermark"}
+                        <span className={p.questionBank ? "font-medium text-foreground" : "text-muted-foreground line-through"}>
+                          ৩,২০০+ প্রশ্নব্যাংক ফুল অ্যাক্সেস
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {p.multipleVersions ? (
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+
+                      {/* Random Generator */}
+                      <div className="flex items-start gap-2.5">
+                        {p.randomGenerator ? (
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
                         ) : (
-                          <X className="h-4 w-4 text-rose-500 shrink-0" />
+                          <div className="w-4 h-4 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 mt-0.5">
+                            <X className="w-3 h-3 stroke-[3]" />
+                          </div>
                         )}
-                        <span className={p.multipleVersions ? "" : "text-muted-foreground"}>Multiple Sets (Set A, B, C, D)</span>
+                        <span className={p.randomGenerator ? "font-medium text-foreground" : "text-muted-foreground line-through"}>
+                          অটোমেটিক ৩-ক্লিক র্যান্ডম জেনারেটর
+                        </span>
+                      </div>
+
+                      {/* Branding */}
+                      <div className="flex items-start gap-2.5">
+                        {p.branding ? (
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 mt-0.5">
+                            <X className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <span className={p.branding ? "font-medium text-foreground" : "text-muted-foreground line-through"}>
+                          প্রতিষ্ঠানের নিজস্ব নাম ও লোগো
+                        </span>
+                      </div>
+
+                      {/* Multiple Versions */}
+                      <div className="flex items-start gap-2.5">
+                        {p.multipleVersions ? (
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 mt-0.5">
+                            <X className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <span className={p.multipleVersions ? "font-medium text-foreground" : "text-muted-foreground line-through"}>
+                          ৪ সেট শাফলার (সেট ক, খ, গ, ঘ)
+                        </span>
+                      </div>
+
+                      {/* Export Format */}
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                        <span className="font-semibold text-foreground">
+                          {p.exports?.includes("docx") ? "PDF এবং MS Word (.docx) উভয় এক্সপোর্ট" : "প্রিন্ট-রেডি এ৪ PDF এক্সপোর্ট"}
+                        </span>
+                      </div>
+
+                      {/* AI Question Import */}
+                      <div className="flex items-start gap-2.5">
+                        {p.importQuestion ? (
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-muted text-muted-foreground flex items-center justify-center shrink-0 mt-0.5">
+                            <X className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        )}
+                        <span className={p.importQuestion ? "font-semibold text-foreground" : "text-muted-foreground line-through"}>
+                          {p.importQuestion ? "AI প্রশ্ন ইমপোর্ট (ছবি, PDF, Word)" : "প্রশ্ন ইমপোর্ট (AI & OCR) বন্ধ"}
+                        </span>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="pt-3 border-t">
-                      {isCurrent ? (
-                        <Button variant="outline" className="w-full font-semibold cursor-default bg-muted/40" disabled>
-                          <Check className="h-4 w-4 mr-1 text-emerald-600" />
-                          Active Package
-                        </Button>
-                      ) : (
-                        <Button asChild variant="primary" className="w-full font-semibold gap-1.5">
-                          <Link href="/dashboard/subscription">
-                            <Sparkles className="h-4 w-4" />
-                            {p.price > currentPlan.price ? "Upgrade to " + p.name : "Switch to " + p.name}
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Card Action Button */}
+                  <div className="pt-4 border-t border-border/40">
+                    {isCurrent ? (
+                      <Button variant="outline" className="w-full font-bold cursor-default bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" disabled>
+                        <Check className="h-4 w-4 mr-1.5" />
+                        সক্রিয় প্যাকেজ
+                      </Button>
+                    ) : (
+                      <Button asChild variant="primary" className="w-full font-bold gap-1.5">
+                        <Link href={`/dashboard/checkout?plan=${p.code}`}>
+                          <Sparkles className="h-4 w-4" />
+                          {p.price > currentPlan.price ? "আপগ্রেড করুন" : "প্যাকেজ পরিবর্তন"}
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -796,25 +961,34 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
             <Card className="border shadow-soft bg-card">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Papers Limit</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">মোট প্রশ্নপত্র লিমিট</span>
                   <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <CardTitle className="text-2xl font-bold mt-1">
-                  {totalPapersCreated} <span className="text-xs font-normal text-muted-foreground">/ {paperLimit.toLocaleString()} Papers</span>
+                  {formatBnNumber(totalPapersCreated)}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    / {isUnlimitedPapers ? "আনলিমিটেড" : `${formatBnNumber(paperLimit)} টি পেপার`}
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      papersPercent > 90 ? "bg-rose-500" : papersPercent > 70 ? "bg-amber-500" : "bg-primary"
+                      isUnlimitedPapers
+                        ? "bg-emerald-500"
+                        : papersPercent > 90
+                        ? "bg-rose-500"
+                        : papersPercent > 70
+                        ? "bg-amber-500"
+                        : "bg-primary"
                     }`}
-                    style={{ width: `${papersPercent}%` }}
+                    style={{ width: `${isUnlimitedPapers ? 100 : papersPercent}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{papersPercent}% Used</span>
-                  <span>{Math.max(0, paperLimit - totalPapersCreated)} Remaining</span>
+                <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                  <span>{isUnlimitedPapers ? "সীমাহীন প্রশ্নপত্র তৈরি করা যাবে" : `${formatBnNumber(papersPercent)}% ব্যবহৃত`}</span>
+                  <span>{isUnlimitedPapers ? "কোনো সীমাবদ্ধতা নেই" : `${formatBnNumber(Math.max(0, paperLimit - totalPapersCreated))} টি অবশিষ্ট`}</span>
                 </div>
               </CardContent>
             </Card>
@@ -823,25 +997,34 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
             <Card className="border shadow-soft bg-card">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Questions Quota</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">অ্যাকাউন্ট-ওয়াইড প্রশ্ন কোটা</span>
                   <Layers className="h-4 w-4 text-teal-600" />
                 </div>
                 <CardTitle className="text-2xl font-bold mt-1">
-                  {totalQuestionsCreated} <span className="text-xs font-normal text-muted-foreground">/ {totalQuestionsLimit.toLocaleString()} Questions</span>
+                  {formatBnNumber(totalQuestionsCreated)}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    / {isUnlimitedQuestions ? "আনলিমিটেড" : `${formatBnNumber(totalQuestionsLimit)} টি প্রশ্ন`}
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      questionsPercent > 90 ? "bg-rose-500" : questionsPercent > 70 ? "bg-amber-500" : "bg-teal-600"
+                      isUnlimitedQuestions
+                        ? "bg-teal-500"
+                        : questionsPercent > 90
+                        ? "bg-rose-500"
+                        : questionsPercent > 70
+                        ? "bg-amber-500"
+                        : "bg-teal-600"
                     }`}
-                    style={{ width: `${questionsPercent}%` }}
+                    style={{ width: `${isUnlimitedQuestions ? 100 : questionsPercent}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{questionsPercent}% Used</span>
-                  <span>{Math.max(0, totalQuestionsLimit - totalQuestionsCreated)} Remaining</span>
+                <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                  <span>{isUnlimitedQuestions ? "সীমাহীন প্রশ্ন যুক্ত করা যাবে" : `${formatBnNumber(questionsPercent)}% ব্যবহৃত`}</span>
+                  <span>{isUnlimitedQuestions ? "কোটা সীমাহীন" : `${formatBnNumber(Math.max(0, totalQuestionsLimit - totalQuestionsCreated))} টি অবশিষ্ট`}</span>
                 </div>
               </CardContent>
             </Card>
@@ -850,20 +1033,22 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
             <Card className="border shadow-soft bg-card sm:col-span-2 lg:col-span-1">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Per-Paper Limit</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">প্রতি পেপারে প্রশ্ন সংখ্যা</span>
                   <Zap className="h-4 w-4 text-amber-500" />
                 </div>
                 <CardTitle className="text-2xl font-bold mt-1">
-                  {questionsPerPaperLimit} <span className="text-xs font-normal text-muted-foreground">questions / paper</span>
+                  {isUnlimitedPerPaper ? "আনলিমিটেড" : `${formatBnNumber(questionsPerPaperLimit)} টি`}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">প্রশ্ন / পেপার</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground space-y-2">
                 <p>
-                  Your current <strong>{currentPlan.name}</strong> package allows formatting up to {questionsPerPaperLimit} questions in a single exam paper.
+                  আপনার বর্তমান <strong>{currentPlan.name}</strong> প্যাকেজে এক পেপারে সর্বোচ্চ{" "}
+                  {isUnlimitedPerPaper ? "আনলিমিটেড" : `${formatBnNumber(questionsPerPaperLimit)} টি`} প্রশ্ন যোগ ও ফরম্যাট করতে পারবেন।
                 </p>
-                {activePlanCode !== "ultra" && (
+                {activePlanCode !== "diamond" && activePlanCode !== "ultra" && (
                   <Link href="/dashboard/subscription" className="text-primary font-semibold hover:underline inline-flex items-center gap-1">
-                    Upgrade to expand limits <ArrowRight className="h-3 w-3" />
+                    লিমিট বৃদ্ধি করতে প্যাকেজ আপগ্রেড করুন <ArrowRight className="h-3 w-3" />
                   </Link>
                 )}
               </CardContent>
@@ -873,64 +1058,100 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
           {/* Detailed Limits & Policy Breakdown */}
           <Card className="border shadow-soft bg-card">
             <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-base font-semibold">Package Rules &amp; Quota Breakdown</CardTitle>
+              <CardTitle className="text-base font-semibold">প্যাকেজ নিয়ম ও কোটা বিশদ বিবরণী</CardTitle>
               <CardDescription className="text-xs">
-                Comprehensive overview of your active limits on {currentPlan.name} package
+                আপনার বর্তমান {currentPlan.name} প্যাকেজের সক্রিয় লিমিট ও অনুমোদিত পারমিশনসমূহ
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="divide-y text-xs">
                 <div className="py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-foreground">Total Paper Creation Limit</p>
-                    <p className="text-muted-foreground text-[11px]">Maximum number of question papers you can store and generate</p>
+                    <p className="font-semibold text-foreground">মোট প্রশ্নপত্র তৈরির লিমিট</p>
+                    <p className="text-muted-foreground text-[11px]">আপনার অ্যাকাউন্টে সর্বোচ্চ যতগুলো প্রশ্নপত্র সংরক্ষণ ও তৈরি করা যাবে</p>
                   </div>
-                  <span className="font-bold text-foreground text-sm">{paperLimit.toLocaleString()} Papers</span>
+                  <span className="font-bold text-foreground text-sm">
+                    {isUnlimitedPapers ? "আনলিমিটেড পেপার" : `${formatBnNumber(paperLimit)} টি পেপার`}
+                  </span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-foreground">Account-wide Question Quota</p>
-                    <p className="text-muted-foreground text-[11px]">Cumulative total questions allowed across all saved question papers</p>
+                    <p className="font-semibold text-foreground">অ্যাকাউন্ট-ওয়াইড মোট প্রশ্ন কোটা</p>
+                    <p className="text-muted-foreground text-[11px]">সবগুলো সংরক্ষিত প্রশ্নপত্র মিলে মোট যতগুলো প্রশ্ন রাখা সম্ভব</p>
                   </div>
-                  <span className="font-bold text-foreground text-sm">{totalQuestionsLimit.toLocaleString()} Questions</span>
+                  <span className="font-bold text-foreground text-sm">
+                    {isUnlimitedQuestions ? "আনলিমিটেড প্রশ্ন" : `${formatBnNumber(totalQuestionsLimit)} টি প্রশ্ন`}
+                  </span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-foreground">Single Paper Capacity</p>
-                    <p className="text-muted-foreground text-[11px]">Maximum question count for a single MCQ or CQ exam</p>
+                    <p className="font-semibold text-foreground">প্রতি একক পেপারের ধারণক্ষমতা</p>
+                    <p className="text-muted-foreground text-[11px]">একটি পরীক্ষার পেপারে সর্বোচ্চ যতগুলো MCQ বা CQ প্রশ্ন যুক্ত হতে পারে</p>
                   </div>
-                  <span className="font-bold text-foreground text-sm">{questionsPerPaperLimit} Questions</span>
+                  <span className="font-bold text-foreground text-sm">
+                    {isUnlimitedPerPaper ? "আনলিমিটেড প্রশ্ন" : `${formatBnNumber(questionsPerPaperLimit)} টি প্রশ্ন`}
+                  </span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-foreground">Export Permissions</p>
-                    <p className="text-muted-foreground text-[11px]">File formats supported for direct paper export</p>
+                    <p className="font-semibold text-foreground">এক্সপোর্ট পারমিশন</p>
+                    <p className="text-muted-foreground text-[11px]">পরীক্ষার পেপার সরাসরি যেসকল ফরম্যাটে ডাউনলোড করা যাবে</p>
                   </div>
                   <span className="font-bold text-foreground text-sm uppercase">
-                    {currentPlan.exports.join(" & ")}
+                    PDF {currentPlan.exports?.includes("docx") ? "ও MS Word (.docx)" : "অনলি"}
                   </span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-foreground">Watermark Status</p>
-                    <p className="text-muted-foreground text-[11px]">Branding applied to downloaded PDF/DOCX files</p>
+                    <p className="font-semibold text-foreground">ওয়াটারমার্ক স্ট্যাটাস</p>
+                    <p className="text-muted-foreground text-[11px]">ডাউনলোডকৃত PDF ডকুমেন্টে ওয়াটারমার্ক থাকবে কি না</p>
                   </div>
                   <span className={`font-bold text-sm ${currentPlan.watermark ? "text-amber-600" : "text-emerald-600"}`}>
-                    {currentPlan.watermark ? "Watermarked" : "Clean (No Watermark)"}
+                    {currentPlan.watermark ? "ওয়াটারমার্ক সহ প্রিভিউ" : "ক্লিন ডকুমেন্ট (কোনো ওয়াটারমার্ক নেই)"}
                   </span>
                 </div>
 
                 <div className="py-2.5 flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-foreground">Multiple Sets &amp; Randomizer</p>
-                    <p className="text-muted-foreground text-[11px]">Automatic generation of Set A, Set B, Set C, Set D</p>
+                    <p className="font-semibold text-foreground">প্রশ্নব্যাংক অ্যাক্সেস</p>
+                    <p className="text-muted-foreground text-[11px]">ক্লাস ও অধ্যায়ভিত্তিক অফিশিয়াল প্রশ্নভাণ্ডার ব্যবহার</p>
+                  </div>
+                  <span className={`font-bold text-sm ${currentPlan.questionBank ? "text-emerald-600" : "text-muted-foreground"}`}>
+                    {currentPlan.questionBank ? "৩,২০০+ প্রশ্নব্যাংক ফুল অ্যাক্সেস" : "অনুমোদিত নয়"}
+                  </span>
+                </div>
+
+                <div className="py-2.5 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-foreground">AI প্রশ্ন ইমপোর্ট</p>
+                    <p className="text-muted-foreground text-[11px]">ছবি, PDF বা Word ফাইল থেকে সরাসরি AI স্ক্যান ও প্রশ্ন তৈরি</p>
+                  </div>
+                  <span className={`font-bold text-sm ${currentPlan.importQuestion ? "text-emerald-600" : "text-muted-foreground"}`}>
+                    {currentPlan.importQuestion ? "সক্রিয় (AI & OCR Scanner)" : "অনুমোদিত নয়"}
+                  </span>
+                </div>
+
+                <div className="py-2.5 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-foreground">৪ সেট প্রশ্নপত্র শাফলার</p>
+                    <p className="text-muted-foreground text-[11px]">এক ক্লিকে সেট ক, খ, গ, ঘ তৈরি করার সুবিধা</p>
                   </div>
                   <span className={`font-bold text-sm ${currentPlan.multipleVersions ? "text-emerald-600" : "text-muted-foreground"}`}>
-                    {currentPlan.multipleVersions ? "Enabled" : "Disabled"}
+                    {currentPlan.multipleVersions ? "সক্রিয় (৪ সেট শাফলার)" : "অনুমোদিত নয়"}
+                  </span>
+                </div>
+
+                <div className="py-2.5 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-foreground">প্রতিষ্ঠানের নিজস্ব নাম ও লোগো ব্র্যান্ডিং</p>
+                    <p className="text-muted-foreground text-[11px]">প্রশ্নপত্রে প্রতিষ্ঠানের নাম, লোগো ও কাস্টম হেডার যুক্ত করার সুবিধা</p>
+                  </div>
+                  <span className={`font-bold text-sm ${currentPlan.branding ? "text-emerald-600" : "text-muted-foreground"}`}>
+                    {currentPlan.branding ? "সক্রিয়" : "অনুমোদিত নয়"}
                   </span>
                 </div>
               </div>

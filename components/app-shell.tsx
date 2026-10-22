@@ -38,7 +38,6 @@ import logosmall from "../public/logo-small.png";
 const nav: Array<{ href: Route; label: string; icon: typeof LayoutDashboard; badge?: string }> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/papers/new", label: "Create Paper", icon: FilePlus2 },
-  { href: "/dashboard/import-questions", label: "Import Question", icon: Sparkles, badge: "ULTRA" },
   { href: "/dashboard/my-questions", label: "My Questions", icon: ListChecks },
   { href: "/dashboard/question-bank", label: "Question Bank", icon: BookOpenCheck },
   { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },

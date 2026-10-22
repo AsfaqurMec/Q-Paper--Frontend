@@ -86,16 +86,18 @@ export function QuestionCreationWizard({
   paper,
   initialMethod,
   initialImportType,
-  userPlan = "free"
+  userPlan = "free",
+  userRole = "user"
 }: {
   paper: Paper;
   initialMethod?: CreationMethod;
   initialImportType?: ImportType;
   userPlan?: UserSession["plan"];
+  userRole?: UserSession["role"];
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hasImportAccess = userPlan === "ultra" || userPlan === "diamond";
+  const hasImportAccess = userPlan === "ultra" || userPlan === "diamond" || userRole === "admin";
   const [method, setMethod] = useState<CreationMethod | null>(
     initialMethod === "automatic" && !hasImportAccess ? null : (initialMethod ?? null)
   );
@@ -156,14 +158,14 @@ export function QuestionCreationWizard({
     }
     if (step === 1) {
       if (method === "bank") {
-        router.push(`/dashboard/papers/${paper.id}/questions/mcq` as Route);
+        router.push(`/dashboard/papers/${paper.id}/import-questions/mcq` as Route);
         return;
       }
       setStep(2);
       return;
     }
     if (method === "manual" && manualType) {
-      router.push(`/dashboard/papers/${paper.id}/questions/${manualType}` as Route);
+      router.push(`/dashboard/papers/${paper.id}/import-questions/${manualType}` as Route);
       return;
     }
     if (method === "automatic" && step === 3) {
@@ -326,7 +328,7 @@ export function QuestionCreationWizard({
       });
       setStep(5);
       const hasCq = imported.some((question) => question.type === "cq" || Boolean(question.subQuestions?.length));
-      setTimeout(() => router.push(`/dashboard/papers/${paper.id}/questions/${hasCq ? "cq" : "mcq"}` as Route), 700);
+      setTimeout(() => router.push(`/dashboard/papers/${paper.id}/import-questions/${hasCq ? "cq" : "mcq"}` as Route), 700);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to import questions.");
     } finally {
@@ -426,8 +428,8 @@ export function QuestionCreationWizard({
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-medium text-primary">Question editor</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">Add or import questions</h1>
+          <p className="text-sm font-medium text-primary">Question Setup</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">Import &amp; Add Questions</h1>
           <p className="mt-2 text-sm text-muted-foreground">{paper.name} - selections are kept when you go back.</p>
         </div>
         <Button variant="outline" onClick={cancelFlow}>

@@ -101,10 +101,31 @@ export async function requireAdmin() {
   return user;
 }
 
+import { DEFAULT_PLANS } from "@/lib/plan-constants";
+export { DEFAULT_PLANS };
+
+
+export async function fetchPlans(): Promise<Plan[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/plans`, {
+      cache: "no-store"
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const json = await res.json();
+    const list = json?.data || json;
+    if (Array.isArray(list) && list.length > 0) {
+      return list;
+    }
+  } catch (error) {
+    console.error("Failed to fetch plans from backend:", error);
+  }
+  return DEFAULT_PLANS;
+}
+
 export const api = {
   profile: () => apiGet<UserSession>("/api/auth/me"),
   dashboard: () => apiGet<DashboardData>("/api/dashboard"),
-  plans: () => apiGet<Plan[]>("/api/plans"),
+  plans: fetchPlans,
   papers: () => apiGet<Paper[]>("/api/papers"),
   paper: (id: string) => apiGet<Paper>(`/api/papers/${id}`),
   questionBank: (query?: string) => apiGet<BankQuestion[]>(`/api/question-bank${query ? `?${query}` : ""}`),

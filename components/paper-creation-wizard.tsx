@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/client-api";
 import { cn, toStandardDigits } from "@/lib/utils";
-import type { Paper } from "@/lib/api-types";
+import type { Paper, UserSession } from "@/lib/api-types";
 
 type CreationMethod = "manual" | "automatic";
 type ManualType = "mcq" | "cq";
@@ -56,8 +56,15 @@ const defaultForm: PaperForm = {
   cqSectionTitle: ""
 };
 
-export function PaperCreationWizard() {
+export function PaperCreationWizard({
+  userPlan = "free",
+  userRole = "user"
+}: {
+  userPlan?: UserSession["plan"];
+  userRole?: UserSession["role"];
+} = {}) {
   const router = useRouter();
+  const hasImportAccess = userPlan === "ultra" || userPlan === "diamond" || userRole === "admin";
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState<CreationMethod | null>(null);
   const [manualType, setManualType] = useState<ManualType | null>(null);
@@ -74,6 +81,15 @@ export function PaperCreationWizard() {
     return Boolean(form.name.trim() && form.subject.trim() && form.className.trim() && form.examType.trim() && form.duration.trim());
   }, [form, importType, manualType, method, step]);
 
+  function selectMethod(nextMethod: CreationMethod) {
+    if (nextMethod === "automatic" && !hasImportAccess) {
+      setError("Question Import is only available for Ultra and Diamond packages. Please upgrade your plan to import questions from images, PDF, or Word.");
+      return;
+    }
+    setMethod(nextMethod);
+    setError("");
+  }
+
   function updateForm<Key extends keyof PaperForm>(key: Key, value: PaperForm[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -82,6 +98,10 @@ export function PaperCreationWizard() {
     setError("");
     if (!canContinue) {
       setError("Complete this step before continuing.");
+      return;
+    }
+    if (step === 1 && method === "automatic" && !hasImportAccess) {
+      setError("Question Import is only available for Ultra and Diamond packages. Please upgrade your plan.");
       return;
     }
     if (step < 3) {
@@ -108,8 +128,8 @@ export function PaperCreationWizard() {
           : `?method=manual`;
       const path =
         method === "manual" && manualType
-          ? `/dashboard/papers/${paper.id}/questions/${manualType}`
-          : `/dashboard/papers/${paper.id}/questions${query}`;
+          ? `/dashboard/papers/${paper.id}/import-questions/${manualType}`
+          : `/dashboard/papers/${paper.id}/import-questions${query}`;
       router.push(path as Route);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create paper.");
@@ -143,8 +163,15 @@ export function PaperCreationWizard() {
         <CardContent className="p-5">
           {step === 1 && (
             <div className="grid gap-4 md:grid-cols-2">
-              <ChoiceCard selected={method === "manual"} icon={Pencil} title="Manual" description="Create MCQ or CQ questions yourself." onClick={() => setMethod("manual")} />
-              <ChoiceCard selected={method === "automatic"} icon={Wand2} title="Automatic Import" description="Parse questions from image, PDF, or DOCX files." onClick={() => setMethod("automatic")} />
+              <ChoiceCard selected={method === "manual"} icon={Pencil} title="Manual" description="Create MCQ or CQ questions yourself." onClick={() => selectMethod("manual")} />
+              <ChoiceCard
+                selected={method === "automatic"}
+                icon={Wand2}
+                title="Automatic Import"
+                description="Parse questions from image, PDF, or DOCX files using OCR + AI."
+                badge={!hasImportAccess ? "ULTRA & DIAMOND" : undefined}
+                onClick={() => selectMethod("automatic")}
+              />
             </div>
           )}
 
@@ -293,14 +320,35 @@ function Stepper({ steps, active }: { steps: string[]; active: number }) {
   );
 }
 
-function ChoiceCard({ selected, icon: Icon, title, description, onClick }: { selected: boolean; icon: LucideIcon; title: string; description: string; onClick: () => void }) {
+function ChoiceCard({
+  selected,
+  icon: Icon,
+  title,
+  description,
+  badge,
+  onClick
+}: {
+  selected: boolean;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  badge?: string;
+  onClick: () => void;
+}) {
   return (
-    <button type="button" onClick={onClick} className={cn("min-h-44 rounded-md border bg-background p-5 text-left transition hover:border-primary hover:shadow-soft", selected && "border-primary bg-accent text-accent-foreground")}>
+    <button type="button" onClick={onClick} className={cn("min-h-44 rounded-md border bg-background p-5 text-left transition hover:border-primary hover:shadow-soft relative", selected && "border-primary bg-accent text-accent-foreground")}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-md border bg-card">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        <span className={cn("flex h-6 w-6 items-center justify-center rounded-full border", selected && "bg-primary text-primary-foreground")}>{selected && <Check className="h-3 w-3" />}</span>
+        <div className="flex items-center gap-2">
+          {badge && (
+            <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+              {badge}
+            </span>
+          )}
+          <span className={cn("flex h-6 w-6 items-center justify-center rounded-full border", selected && "bg-primary text-primary-foreground")}>{selected && <Check className="h-3 w-3" />}</span>
+        </div>
       </div>
       <h2 className="mt-4 text-lg font-semibold">{title}</h2>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>

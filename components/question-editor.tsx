@@ -555,13 +555,24 @@ export function QuestionEditor({
   }
 
   async function exportPaper(format: "pdf" | "docx") {
+    let interval: any = null;
     try {
-      setStatus(`Saving latest questions before ${format.toUpperCase()} export...`);
+      setStatus(`Saving latest questions before ${format.toUpperCase()} export (10%)...`);
       await saveAll({ silent: true });
-      setStatus(`Preparing ${format.toUpperCase()} download...`);
+      setStatus(`Preparing ${format.toUpperCase()} download (20%)...`);
+
+      let progress = 20;
+      interval = setInterval(() => {
+        if (progress < 85) {
+          progress += Math.max(1, Math.round((85 - progress) * 0.12));
+          setStatus(`Compiling ${format.toUpperCase()} document (${progress}%)...`);
+        }
+      }, 200);
+
       const setQuery = activePreviewSet ? `?set=${activePreviewSet}` : "";
       const response = await fetch(`/api/backend/papers/${currentPaper.id}/export/${format}${setQuery}`);
       if (!response.ok) {
+        if (interval) clearInterval(interval);
         const errJson = await response.json().catch(() => null);
         throw new Error(
           errJson?.message ||
@@ -570,6 +581,9 @@ export function QuestionEditor({
               : `Export failed (${response.status})`)
         );
       }
+      if (interval) clearInterval(interval);
+      setStatus(`Downloading ${format.toUpperCase()} to browser (95%)...`);
+
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -580,9 +594,12 @@ export function QuestionEditor({
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setStatus(`${format.toUpperCase()} download started`);
+      setStatus(`${format.toUpperCase()} downloaded successfully (100%)!`);
     } catch (error) {
+      if (interval) clearInterval(interval);
       setStatus(error instanceof Error ? error.message : "Export failed");
+    } finally {
+      if (interval) clearInterval(interval);
     }
   }
 
@@ -639,7 +656,7 @@ export function QuestionEditor({
           {/* Top row: Back Navigation, Status & Edit Paper Button */}
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             <Button asChild variant="ghost" size="sm" className="-ml-2">
-              <Link href={`/dashboard/papers/${currentPaper.id}/questions`}>
+              <Link href={`/dashboard/papers/${currentPaper.id}/import-questions`}>
                 <ArrowLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Import or type</span>
               </Link>
@@ -932,7 +949,7 @@ export function QuestionEditor({
         <div className="rounded-lg border bg-card p-5 shadow-soft">
           <div className="flex items-center justify-between">
             <Button asChild variant="ghost" size="sm" className="-ml-3">
-              <Link href={`/dashboard/papers/${currentPaper.id}/questions`}>
+              <Link href={`/dashboard/papers/${currentPaper.id}/import-questions`}>
                 <ArrowLeft className="h-4 w-4" />
                 Import or type
               </Link>

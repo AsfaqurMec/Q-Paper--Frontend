@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Check,
+  CheckCircle2,
   Copy,
   Download,
   Eye,
@@ -10,6 +11,7 @@ import {
   Grid,
   Layers,
   ListOrdered,
+  Loader2,
   Printer,
   Shuffle,
   Sparkles,
@@ -150,7 +152,9 @@ export function McqSetDialog({
   }, [mcqs.length, sets, isBangla]);
 
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
-  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingAll, setDownloadingAll] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [setWithAnswer, setSetWithAnswer] = useState(false);
 
   if (!open) return null;
@@ -187,19 +191,48 @@ export function McqSetDialog({
   }
 
   async function downloadSetExport(format: "pdf" | "docx", setKey: string) {
+    let interval: any = null;
     try {
       setDownloadingKey(`${format}_${setKey}`);
+      setDownloadProgress(10);
+      setDownloadStatus(`সেট ${setKey} সংরক্ষণ করা হচ্ছে...`);
       if (onSaveBeforeExport) {
         await onSaveBeforeExport();
       }
+
+      setDownloadProgress(20);
+      setDownloadStatus(`সেট ${setKey} (${format.toUpperCase()}) প্রস্তুত হচ্ছে...`);
+
+      let current = 20;
+      interval = setInterval(() => {
+        if (current < 85) {
+          const delta = Math.max(1, Math.round((85 - current) * 0.12));
+          current += delta;
+          setDownloadProgress(current);
+          if (current < 50) {
+            setDownloadStatus(`সেট ${setKey} সমীকরণ ও অপশন প্রসেসিং...`);
+          } else {
+            setDownloadStatus(`সেট ${setKey} পেজ লেআউট তৈরি হচ্ছে...`);
+          }
+        }
+      }, 200);
+
       const response = await fetch(
         `/api/backend/papers/${paper.id}/export/${format}?set=${setKey}&layout=${paper.layout}&questionsPerPage=${paper.questionsPerPage}&withAnswer=${setWithAnswer ? "true" : "false"}`
       );
       if (!response.ok) {
+        if (interval) clearInterval(interval);
         const errJson = await response.json().catch(() => null);
         throw new Error(errJson?.message || `Export failed with status ${response.status}`);
       }
+
+      if (interval) clearInterval(interval);
+      setDownloadProgress(95);
+      setDownloadStatus("ফাইল ব্রাউজারে ডাউনলোড হচ্ছে...");
+
       const blob = await response.blob();
+      setDownloadProgress(100);
+
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -212,7 +245,9 @@ export function McqSetDialog({
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      await new Promise((r) => setTimeout(r, 600));
     } catch (err) {
+      if (interval) clearInterval(interval);
       console.error("Set export failed:", err);
       showAlert({
         title: "এক্সপোর্ট সমস্যা",
@@ -220,25 +255,57 @@ export function McqSetDialog({
         type: "error"
       });
     } finally {
+      if (interval) clearInterval(interval);
       setDownloadingKey(null);
+      setDownloadProgress(0);
+      setDownloadStatus(null);
     }
   }
 
   async function downloadAllSets(format: "pdf" | "docx") {
     if (downloadingAll) return;
+    let interval: any = null;
     try {
-      setDownloadingAll(true);
+      setDownloadingAll(format);
+      setDownloadProgress(10);
+      setDownloadStatus("প্রশ্নপত্র সংরক্ষণ করা হচ্ছে...");
       if (onSaveBeforeExport) {
         await onSaveBeforeExport();
       }
+
+      setDownloadProgress(20);
+      setDownloadStatus(`সকল ৪টি সেট (${format.toUpperCase()}) প্রস্তুত হচ্ছে...`);
+
+      let current = 20;
+      interval = setInterval(() => {
+        if (current < 85) {
+          const delta = Math.max(1, Math.round((85 - current) * 0.12));
+          current += delta;
+          setDownloadProgress(current);
+          if (current < 55) {
+            setDownloadStatus("সকল সেটের শাফল ও প্রশ্ন বিন্যাস হচ্ছে...");
+          } else {
+            setDownloadStatus("পেজ লেআউট ও সমন্বিত পেপার তৈরি হচ্ছে...");
+          }
+        }
+      }, 200);
+
       const response = await fetch(
         `/api/backend/papers/${paper.id}/export/${format}?set=all&layout=${paper.layout}&questionsPerPage=${paper.questionsPerPage}&withAnswer=${setWithAnswer ? "true" : "false"}`
       );
       if (!response.ok) {
+        if (interval) clearInterval(interval);
         const errJson = await response.json().catch(() => null);
         throw new Error(errJson?.message || `Export failed with status ${response.status}`);
       }
+
+      if (interval) clearInterval(interval);
+      setDownloadProgress(95);
+      setDownloadStatus("ফাইল ব্রাউজারে ডাউনলোড হচ্ছে...");
+
       const blob = await response.blob();
+      setDownloadProgress(100);
+
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -249,7 +316,9 @@ export function McqSetDialog({
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      await new Promise((r) => setTimeout(r, 600));
     } catch (err) {
+      if (interval) clearInterval(interval);
       console.error("Failed to download all sets:", err);
       showAlert({
         title: "এক্সপোর্ট সমস্যা",
@@ -257,7 +326,10 @@ export function McqSetDialog({
         type: "error"
       });
     } finally {
-      setDownloadingAll(false);
+      if (interval) clearInterval(interval);
+      setDownloadingAll(null);
+      setDownloadProgress(0);
+      setDownloadStatus(null);
     }
   }
 
@@ -532,20 +604,40 @@ export function McqSetDialog({
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={!!downloadingKey || !!downloadingAll}
                     onClick={() => downloadSetExport("pdf", activeTab)}
-                    className="gap-1 text-xs"
+                    className="gap-1 text-xs min-w-[70px]"
                   >
-                    <FileDown className="h-3.5 w-3.5" />
-                    PDF
+                    {downloadingKey === `pdf_${activeTab}` ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
+                        <span className="font-mono">{downloadProgress}%</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="h-3.5 w-3.5" />
+                        PDF
+                      </>
+                    )}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={!!downloadingKey || !!downloadingAll}
                     onClick={() => downloadSetExport("docx", activeTab)}
-                    className="gap-1 text-xs"
+                    className="gap-1 text-xs min-w-[75px]"
                   >
-                    <FileDown className="h-3.5 w-3.5" />
-                    DOCX
+                    {downloadingKey === `docx_${activeTab}` ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                        <span className="font-mono">{downloadProgress}%</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="h-3.5 w-3.5" />
+                        DOCX
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -591,6 +683,31 @@ export function McqSetDialog({
           )}
         </div>
 
+        {/* Active Download Progress Strip */}
+        {(downloadingKey || downloadingAll) && (
+          <div className="px-3 sm:px-6 py-2.5 bg-teal-50/80 dark:bg-teal-950/40 border-t border-teal-200/60 dark:border-teal-800/60 animate-in fade-in">
+            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+              <div className="flex items-center gap-2 text-teal-900 dark:text-teal-200">
+                {downloadProgress >= 100 ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <Loader2 className="h-4 w-4 animate-spin text-teal-600 shrink-0" />
+                )}
+                <span className="truncate">{downloadStatus || "ফাইল প্রস্তুত হচ্ছে..."}</span>
+              </div>
+              <span className="font-mono font-bold text-teal-700 dark:text-teal-400 text-sm">
+                {downloadProgress}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-slate-200/80 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full transition-all duration-200 ease-out"
+                style={{ width: `${downloadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t px-3 sm:px-6 py-3 bg-muted/20">
           <div className="flex flex-wrap items-center gap-2">
@@ -625,22 +742,40 @@ export function McqSetDialog({
             <Button
               size="sm"
               variant="outline"
-              disabled={downloadingAll || mcqs.length < 2}
+              disabled={!!downloadingAll || !!downloadingKey || mcqs.length < 2}
               onClick={() => downloadAllSets("pdf")}
-              className="gap-1 text-xs border-teal-300 text-teal-800 hover:bg-teal-50"
+              className="gap-1 text-xs border-teal-300 text-teal-800 hover:bg-teal-50 min-w-[110px]"
             >
-              <FileDown className="h-3.5 w-3.5 text-teal-600" />
-              {downloadingAll ? (isBangla ? "ডাউনলোড হচ্ছে..." : "Downloading...") : "All Sets (PDF)"}
+              {downloadingAll === "pdf" ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
+                  <span className="font-mono">PDF ({downloadProgress}%)</span>
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-3.5 w-3.5 text-teal-600" />
+                  All Sets (PDF)
+                </>
+              )}
             </Button>
             <Button
               size="sm"
               variant="outline"
-              disabled={downloadingAll || mcqs.length < 2}
+              disabled={!!downloadingAll || !!downloadingKey || mcqs.length < 2}
               onClick={() => downloadAllSets("docx")}
-              className="gap-1 text-xs border-indigo-300 text-indigo-800 hover:bg-indigo-50"
+              className="gap-1 text-xs border-indigo-300 text-indigo-800 hover:bg-indigo-50 min-w-[115px]"
             >
-              <FileDown className="h-3.5 w-3.5 text-indigo-600" />
-              All Sets (DOCX)
+              {downloadingAll === "docx" ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                  <span className="font-mono">DOCX ({downloadProgress}%)</span>
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-3.5 w-3.5 text-indigo-600" />
+                  All Sets (DOCX)
+                </>
+              )}
             </Button>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">

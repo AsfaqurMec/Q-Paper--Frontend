@@ -35,8 +35,8 @@ export function PaperActions({
 
   const editorHref =
     questionType && questionType !== "both"
-      ? `/dashboard/papers/${paperId}/questions/${questionType}`
-      : `/dashboard/papers/${paperId}/questions`;
+      ? `/dashboard/papers/${paperId}/import-questions/${questionType}`
+      : `/dashboard/papers/${paperId}/import-questions`;
 
   async function handleConfirmDelete() {
     try {

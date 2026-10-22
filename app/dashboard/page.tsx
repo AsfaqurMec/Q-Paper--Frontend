@@ -172,7 +172,7 @@ export default async function DashboardPage() {
                 <div className="space-y-1 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Link
-                      href={`/dashboard/papers/${paper.id}/questions`}
+                      href={`/dashboard/papers/${paper.id}/import-questions`}
                       className="font-bold text-sm text-foreground hover:text-primary transition-colors truncate"
                     >
                       {paper.name}
@@ -196,7 +196,7 @@ export default async function DashboardPage() {
                 <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-start sm:self-center pt-1 sm:pt-0">
                   {user?.role === "admin" && (
                     <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium">
-                      <Link href={`/dashboard/papers/${paper.id}/questions`}>
+                      <Link href={`/dashboard/papers/${paper.id}/import-questions`}>
                         সম্পাদনা
                       </Link>
                     </Button>

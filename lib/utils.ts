@@ -34,3 +34,9 @@ export function parseNumberInput(value: string | number | undefined | null, fall
   const parsed = parseFloat(normalized);
   return isNaN(parsed) ? fallback : parsed;
 }
+
+export function formatBnNumber(num: number | string | undefined | null): string {
+  if (num === undefined || num === null) return "০";
+  const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+  return String(num).replace(/[0-9]/g, (w) => bnDigits[+w]);
+}

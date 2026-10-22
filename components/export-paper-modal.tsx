@@ -55,6 +55,7 @@ export function ExportPaperModal({
   const [selectedSet, setSelectedSet] = useState<string>(activeSet || "");
   const [allSetsMode, setAllSetsMode] = useState<"combined" | "separate">("combined");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +68,7 @@ export function ExportPaperModal({
       setAllSetsMode("combined");
       setError(null);
       setIsDownloading(false);
+      setDownloadProgress(0);
       setDownloadStatus(null);
 
       // Proactively warm up backend (Render cold-start mitigation)
@@ -81,7 +83,9 @@ export function ExportPaperModal({
   async function triggerSingleDownload(
     formatType: "pdf" | "docx",
     setKey?: string,
-    isAll?: boolean
+    isAll?: boolean,
+    progressBase = 10,
+    progressSpan = 90
   ) {
     const params = new URLSearchParams();
     params.set("withAnswer", withAnswer ? "true" : "false");
@@ -95,12 +99,34 @@ export function ExportPaperModal({
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 90000); // 90s safety timeout
 
+    // Smooth ticker during server processing
+    let currentRelative = 0;
+    const maxSimulatedRelative = 0.85;
+    const interval = setInterval(() => {
+      if (currentRelative < maxSimulatedRelative) {
+        // Ticker smoothly decelerates as it approaches 85%
+        const delta = Math.max(0.015, (maxSimulatedRelative - currentRelative) * 0.12);
+        currentRelative = Math.min(maxSimulatedRelative, currentRelative + delta);
+        const overall = Math.round(progressBase + currentRelative * progressSpan);
+        setDownloadProgress(overall);
+
+        if (currentRelative < 0.3) {
+          setDownloadStatus("ম্যাথ ও সমীকরণ প্রসেস করা হচ্ছে...");
+        } else if (currentRelative < 0.6) {
+          setDownloadStatus(`${formatType.toUpperCase()} পেজ লেআউট ও ফন্ট তৈরি হচ্ছে...`);
+        } else {
+          setDownloadStatus("ডকুমেন্ট অপ্টিমাইজেশন সম্পন্ন হচ্ছে...");
+        }
+      }
+    }, 200);
+
     try {
       const response = await fetch(`/api/backend/papers/${paperId}/export/${formatType}${queryString}`, {
         signal: controller.signal
       });
 
       if (!response.ok) {
+        clearInterval(interval);
         if (response.status === 504 || response.status === 502) {
           throw new Error(
             "সার্ভার রেসপন্স দিতে সময় নিচ্ছে বা ব্যাকএন্ড স্টার্ট হচ্ছে (Render Cold Start)। অনুগ্রহ করে ৩০ সেকেন্ড পর আবার চেষ্টা করুন।"
@@ -115,7 +141,38 @@ export function ExportPaperModal({
         );
       }
 
-      const blob = await response.blob();
+      setDownloadStatus("ব্রাউজারে ফাইল ডাউনলোড হচ্ছে...");
+      const contentLengthHeader = response.headers.get("content-length");
+      const contentLength = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+
+      let blob: Blob;
+      if (response.body && contentLength > 0) {
+        const reader = response.body.getReader();
+        const chunks: BlobPart[] = [];
+        let receivedBytes = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            chunks.push(value);
+            receivedBytes += value.length;
+            const downloadRel = 0.85 + (receivedBytes / contentLength) * 0.14; // 85% -> 99%
+            const overall = Math.min(
+              Math.round(progressBase + progressSpan - 1),
+              Math.round(progressBase + downloadRel * progressSpan)
+            );
+            setDownloadProgress(overall);
+          }
+        }
+        blob = new Blob(chunks);
+      } else {
+        blob = await response.blob();
+      }
+
+      clearInterval(interval);
+      setDownloadProgress(Math.round(progressBase + progressSpan));
+
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -136,6 +193,7 @@ export function ExportPaperModal({
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     } finally {
+      clearInterval(interval);
       clearTimeout(timer);
     }
   }
@@ -149,9 +207,11 @@ export function ExportPaperModal({
 
     try {
       setIsDownloading(true);
+      setDownloadProgress(5);
       if (onSaveBeforeExport) {
         setDownloadStatus("প্রশ্নপত্র সংরক্ষণ করা হচ্ছে...");
         await onSaveBeforeExport();
+        setDownloadProgress(10);
       }
 
       if (selectedSet === "all" && allSetsMode === "separate") {
@@ -163,20 +223,24 @@ export function ExportPaperModal({
         ];
         for (let i = 0; i < sets.length; i++) {
           const s = sets[i];
+          const base = i * 25;
           setDownloadStatus(`সেট ${s.key} (${s.name}) ডাউনলোড হচ্ছে (${i + 1}/${sets.length})...`);
-          await triggerSingleDownload(format, s.key);
+          await triggerSingleDownload(format, s.key, false, base, 25);
           if (i < sets.length - 1) {
-            await new Promise((r) => setTimeout(r, 800));
+            await new Promise((r) => setTimeout(r, 600));
           }
         }
       } else if (selectedSet === "all") {
         setDownloadStatus("সকল ৪টি সেট সহ ফাইল প্রস্তুত হচ্ছে...");
-        await triggerSingleDownload(format, undefined, true);
+        await triggerSingleDownload(format, undefined, true, 10, 90);
       } else {
         setDownloadStatus(`${format.toUpperCase()} ফাইল প্রস্তুত হচ্ছে...`);
-        await triggerSingleDownload(format, selectedSet || undefined);
+        await triggerSingleDownload(format, selectedSet || undefined, false, 10, 90);
       }
 
+      setDownloadProgress(100);
+      setDownloadStatus("ডাউনলোড সম্পন্ন! (Download Complete)");
+      await new Promise((r) => setTimeout(r, 700));
       onClose();
     } catch (err: any) {
       if (err.name === "AbortError") {
@@ -187,6 +251,7 @@ export function ExportPaperModal({
     } finally {
       setIsDownloading(false);
       setDownloadStatus(null);
+      setDownloadProgress(0);
     }
   }
 
@@ -451,15 +516,76 @@ export function ExportPaperModal({
               </button>
             </div>
           </div>
+
+          {/* Dedicated Percentage Loader Card */}
+          {isDownloading && (
+            <div className="rounded-xl border border-teal-200 dark:border-teal-800/70 bg-gradient-to-r from-teal-50/90 via-emerald-50/60 to-teal-50/90 dark:from-teal-950/40 dark:via-emerald-950/20 dark:to-teal-950/40 p-4 shadow-xs animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {downloadProgress >= 100 ? (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300 shrink-0">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-300 shrink-0">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  )}
+                  <div className="truncate">
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                      {downloadStatus || "ফাইল প্রস্তুত করা হচ্ছে..."}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {downloadProgress < 20
+                        ? "প্রশ্ন ও অপশন গুছিয়ে নেওয়া হচ্ছে..."
+                        : downloadProgress < 50
+                        ? "ম্যাথ ও সমীকরণ রেন্ডারিং হচ্ছে..."
+                        : downloadProgress < 85
+                        ? "পিডিএফ পেজ লেআউট ও ফন্ট রেন্ডার হচ্ছে..."
+                        : downloadProgress < 100
+                        ? "ব্রাউজারে ডাউনলোড সম্পন্ন হচ্ছে..."
+                        : "ফাইলটি সফলভাবে ডাউনলোড হয়েছে!"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="font-mono text-lg sm:text-xl font-extrabold text-teal-700 dark:text-teal-400">
+                    {downloadProgress}%
+                  </span>
+                  <span className="text-[10px] font-semibold text-teal-600/80 uppercase tracking-wider">
+                    {downloadProgress >= 100 ? "Done" : "Exporting"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar Track */}
+              <div className="relative w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-teal-500 via-teal-400 to-emerald-500 transition-all duration-200 ease-out shadow-xs"
+                  style={{ width: `${downloadProgress}%` }}
+                />
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-teal-600 dark:text-teal-400" />
+                  {downloadProgress < 100 ? "প্রসেসিং চলছে, পেজ বন্ধ করবেন না" : "ডাউনলোড সম্পন্ন"}
+                </span>
+                <span className="font-medium text-teal-700 dark:text-teal-400 font-mono">
+                  {downloadProgress}%
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t pt-4">
           <div className="text-xs text-muted-foreground text-center sm:text-left">
-            {downloadStatus ? (
+            {isDownloading ? (
               <span className="flex items-center gap-1.5 font-medium text-teal-600 dark:text-teal-400">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {downloadStatus}
+                <span className="font-mono font-bold">{downloadProgress}%</span> - {downloadStatus || "প্রসেসিং চলছে..."}
               </span>
             ) : (
               <span>এক্সপোর্ট সাধারণত ২-৫ সেকেন্ডে সম্পন্ন হয়</span>
@@ -473,12 +599,16 @@ export function ExportPaperModal({
             <Button
               onClick={handleDownload}
               disabled={isDownloading}
-              className="gap-2 min-w-[140px] bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+              className="gap-2 min-w-[155px] bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all shadow-xs"
             >
               {isDownloading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
+                  {downloadProgress >= 100 ? (
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  ) : (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  <span>{downloadProgress >= 100 ? "Complete 100%" : `Exporting ${downloadProgress}%`}</span>
                 </>
               ) : (
                 <>
