@@ -499,7 +499,7 @@ export function QuestionFormModal({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {/* Class Selector */}
               <div>
-                <label className="text-[11px] font-medium text-muted-foreground">শ্রেণি (Class / Level)</label>
+                <label className="text-[11px] font-medium text-muted-foreground">শ্রেণি</label>
                 {hierarchy.length > 0 ? (
                   <select
                     value={className}
@@ -508,10 +508,10 @@ export function QuestionFormModal({
                   >
                     {hierarchy.map((cls) => (
                       <option key={cls.className} value={cls.className}>
-                        {getBengaliClass(cls.className)}
+                        {cls.nameBn || getBengaliClass(cls.className)}
                       </option>
                     ))}
-                    <option value="__custom__">+ কাস্টম শ্রেণি (Custom Class)...</option>
+                    <option value="__custom__">+ কাস্টম শ্রেণি...</option>
                   </select>
                 ) : (
                   <input
@@ -525,7 +525,7 @@ export function QuestionFormModal({
 
               {/* Subject Selector */}
               <div>
-                <label className="text-[11px] font-medium text-muted-foreground">বিষয় (Subject)</label>
+                <label className="text-[11px] font-medium text-muted-foreground">বিষয়</label>
                 {availableSubjects.length > 0 ? (
                   <select
                     value={subject}
@@ -534,7 +534,7 @@ export function QuestionFormModal({
                   >
                     {availableSubjects.map((s) => (
                       <option key={s.name} value={s.name}>
-                        {getBengaliSubject(s.name)}
+                        {s.nameBn || getBengaliSubject(s.name)}
                       </option>
                     ))}
                   </select>
@@ -552,13 +552,13 @@ export function QuestionFormModal({
               {/* Chapter Selector */}
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-medium text-muted-foreground">অধ্যায় (Chapter)</label>
+                  <label className="text-[11px] font-medium text-muted-foreground">অধ্যায়</label>
                   <button
                     type="button"
                     onClick={() => setIsCustomChapter(!isCustomChapter)}
                     className="text-[10px] text-primary hover:underline"
                   >
-                    {isCustomChapter ? "তালিকা (List)" : "কাস্টম (Custom)"}
+                    {isCustomChapter ? "তালিকা" : "কাস্টম"}
                   </button>
                 </div>
                 {isCustomChapter || availableChapters.length === 0 ? (
@@ -583,10 +583,10 @@ export function QuestionFormModal({
                   >
                     {availableChapters.map((ch) => (
                       <option key={ch.name} value={ch.name}>
-                        {getBengaliChapter(ch.name)}
+                        {ch.nameBn || getBengaliChapter(ch.name)}
                       </option>
                     ))}
-                    <option value="__custom__">+ কাস্টম অধ্যায় (Custom Chapter)...</option>
+                    <option value="__custom__">+ কাস্টম অধ্যায়...</option>
                   </select>
                 )}
               </div>

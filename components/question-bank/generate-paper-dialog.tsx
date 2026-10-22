@@ -643,7 +643,7 @@ export function GeneratePaperDialog({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                   {/* Class */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">শ্রেণি / বিভাগ (Class / Level)</label>
+                    <label className="text-xs font-medium text-foreground">শ্রেণি / বিভাগ</label>
                     <select
                       value={className}
                       onChange={(e) => handleClassChange(e.target.value)}
@@ -652,7 +652,7 @@ export function GeneratePaperDialog({
                       {hierarchy.length > 0 ? (
                         hierarchy.map((cls) => (
                           <option key={cls.className} value={cls.className}>
-                            {getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)} টি প্রশ্ন)
+                            {cls.nameBn || getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)} টি প্রশ্ন)
                           </option>
                         ))
                       ) : (
@@ -666,7 +666,7 @@ export function GeneratePaperDialog({
 
                   {/* Subject */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">বিষয় (Subject)</label>
+                    <label className="text-xs font-medium text-foreground">বিষয়</label>
                     <select
                       value={subject}
                       onChange={(e) => handleSubjectChange(e.target.value)}
@@ -675,7 +675,7 @@ export function GeneratePaperDialog({
                       {availableSubjects.length > 0 ? (
                         availableSubjects.map((s) => (
                           <option key={s.name} value={s.name}>
-                            {getBengaliSubject(s.name)} ({toBengaliDigits(s.totalCount)} টি প্রশ্ন)
+                            {s.nameBn || getBengaliSubject(s.name)} ({toBengaliDigits(s.totalCount)} টি প্রশ্ন)
                           </option>
                         ))
                       ) : (
@@ -686,16 +686,16 @@ export function GeneratePaperDialog({
 
                   {/* Chapter */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">অধ্যায় ব্যাপ্তি (Chapter Coverage)</label>
+                    <label className="text-xs font-medium text-foreground">অধ্যায় ব্যাপ্তি</label>
                     <select
                       value={chapter}
                       onChange={(e) => setChapter(e.target.value)}
                       className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     >
-                      <option value="all">🌟 সকল অধ্যায় (Full Subject Test)</option>
+                      <option value="all">🌟 সকল অধ্যায় (সম্পূর্ণ পাঠ্যক্রম)</option>
                       {availableChapters.map((ch) => (
                         <option key={ch.name} value={ch.name}>
-                          {getBengaliChapter(ch.name)} ({toBengaliDigits(ch.mcqCount)} নৈর্ব্যক্তিক, {toBengaliDigits(ch.cqCount)} সৃজনশীল)
+                          {ch.nameBn || getBengaliChapter(ch.name)} ({toBengaliDigits(ch.mcqCount)} নৈর্ব্যক্তিক, {toBengaliDigits(ch.cqCount)} সৃজনশীল)
                         </option>
                       ))}
                     </select>
@@ -973,18 +973,18 @@ export function GeneratePaperDialog({
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-foreground">পরীক্ষার ধরন (Exam Type)</label>
+                    <label className="text-xs font-medium text-foreground">পরীক্ষার ধরন</label>
                     <select
                       value={examType}
                       onChange={(e) => setExamType(e.target.value)}
                       className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     >
-                      <option value="Model Test">Model Test (মডেল টেস্ট)</option>
-                      <option value="Class Test">Class Test (শ্রেণি পরীক্ষা)</option>
-                      <option value="Pre-Test Examination">Pre-Test Examination (প্রাক-নির্বাচনী)</option>
-                      <option value="Term Final Exam">Term Final Exam (সাময়িক পরীক্ষা)</option>
-                      <option value="Board Final Practice">Board Final Practice (বোর্ড ফাইনাল প্রস্তুতি)</option>
-                      <option value="Quick Quiz">Quick Quiz (কুইজ)</option>
+                      <option value="Model Test">মডেল টেস্ট (Model Test)</option>
+                      <option value="Class Test">শ্রেণি পরীক্ষা (Class Test)</option>
+                      <option value="Pre-Test Examination">প্রাক-নির্বাচনী পরীক্ষা (Pre-Test)</option>
+                      <option value="Term Final Exam">সাময়িক পরীক্ষা (Term Final)</option>
+                      <option value="Board Final Practice">বোর্ড ফাইনাল প্রস্তুতি (Board Practice)</option>
+                      <option value="Quick Quiz">কুইজ পরীক্ষা (Quick Quiz)</option>
                     </select>
                   </div>
                 </div>
@@ -993,7 +993,7 @@ export function GeneratePaperDialog({
                 <div className="rounded-xl border border-amber-300/50 bg-amber-500/5 p-3.5 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      🏛️ বোর্ড ও পরীক্ষার সাল ফিল্টার (Board & Year Filter)
+                      🏛️ বোর্ড ও পরীক্ষার সাল ফিল্টার
                     </span>
                     <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
                       <input
@@ -1008,7 +1008,7 @@ export function GeneratePaperDialog({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground">নির্দিষ্ট বোর্ড (Specific Board)</label>
+                      <label className="text-[11px] font-semibold text-muted-foreground">নির্দিষ্ট বোর্ড</label>
                       <select
                         value={selectedBoard}
                         onChange={(e) => {
@@ -1017,7 +1017,7 @@ export function GeneratePaperDialog({
                         }}
                         className="mt-1 h-9 w-full rounded-lg border bg-background px-2.5 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
                       >
-                        <option value="all">সকল বোর্ড (All Boards)</option>
+                        <option value="all">সকল বোর্ড</option>
                         {[
                           "ঢাকা বোর্ড", "রাজশাহী বোর্ড", "চট্টগ্রাম বোর্ড", "কুমিল্লা বোর্ড",
                           "যশোর বোর্ড", "বরিশাল বোর্ড", "সিলেট বোর্ড", "দিনাজপুর বোর্ড",
@@ -1029,7 +1029,7 @@ export function GeneratePaperDialog({
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground">পরীক্ষার সাল (Exam Year)</label>
+                      <label className="text-[11px] font-semibold text-muted-foreground">পরীক্ষার সাল</label>
                       <select
                         value={selectedYear}
                         onChange={(e) => {
@@ -1038,9 +1038,9 @@ export function GeneratePaperDialog({
                         }}
                         className="mt-1 h-9 w-full rounded-lg border bg-background px-2.5 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
                       >
-                        <option value="all">সকল সাল (All Years)</option>
+                        <option value="all">সকল সাল</option>
                         {["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"].map((y) => (
-                          <option key={y} value={y}>{y}</option>
+                          <option key={y} value={y}>{toBengaliDigits(y)} সাল</option>
                         ))}
                       </select>
                     </div>
@@ -1051,7 +1051,7 @@ export function GeneratePaperDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
                   {/* Duration */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">সময়কাল (Duration)</label>
+                    <label className="text-xs font-medium text-foreground">সময়কাল</label>
                     <div className="relative mt-1.5">
                       <input
                         type="text"
@@ -1066,44 +1066,44 @@ export function GeneratePaperDialog({
 
                   {/* Difficulty */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">কঠিনতার মাত্রা (Difficulty)</label>
+                    <label className="text-xs font-medium text-foreground">কঠিনতার মাত্রা</label>
                     <select
                       value={difficulty}
                       onChange={(e) => setDifficulty(e.target.value as any)}
                       className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
                     >
-                      <option value="all">Balanced (ভারসাম্যপূর্ণ)</option>
-                      <option value="easy">Easy Only (সহজ)</option>
-                      <option value="medium">Medium Only (মাঝারি)</option>
-                      <option value="hard">Hard Only (কঠিন)</option>
+                      <option value="all">ভারসাম্যপূর্ণ (সাধারণ)</option>
+                      <option value="easy">সহজ (Easy)</option>
+                      <option value="medium">মাঝারি (Medium)</option>
+                      <option value="hard">কঠিন (Hard)</option>
                     </select>
                   </div>
 
                   {/* Layout */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">প্রিন্ট লেআউট (Layout)</label>
+                    <label className="text-xs font-medium text-foreground">প্রিন্ট লেআউট</label>
                     <select
                       value={layout}
                       onChange={(e) => setLayout(e.target.value as any)}
                       className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
                     >
-                      <option value="split">2 Columns (Standard ২-কলাম)</option>
-                      <option value="single">1 Column (Full Width ১-কলাম)</option>
+                      <option value="split">২ কলাম (স্প্লিট ভিউ)</option>
+                      <option value="single">১ কলাম (ফুল উইডথ)</option>
                     </select>
                   </div>
 
                   {/* Questions Per Page */}
                   <div>
-                    <label className="text-xs font-medium text-foreground">প্রতি পৃষ্ঠায় প্রশ্ন (Per Page)</label>
+                    <label className="text-xs font-medium text-foreground">প্রতি পৃষ্ঠায় প্রশ্ন</label>
                     <select
                       value={questionsPerPage}
                       onChange={(e) => setQuestionsPerPage(Number(e.target.value))}
                       className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
                     >
-                      <option value={0}>Auto (পৃষ্ঠা অনুযায়ী ফিট)</option>
+                      <option value={0}>স্বয়ংক্রিয় (পৃষ্ঠা অনুযায়ী ফিট)</option>
                       <option value={5}>৫টি প্রশ্ন</option>
                       <option value={8}>৮টি প্রশ্ন</option>
-                      <option value={10}>১০টি প্রশ্ন (Standard)</option>
+                      <option value={10}>১০টি প্রশ্ন (প্রমিত)</option>
                       <option value={12}>১২টি প্রশ্ন</option>
                       <option value={15}>১৫টি প্রশ্ন</option>
                       <option value={20}>২০টি প্রশ্ন</option>

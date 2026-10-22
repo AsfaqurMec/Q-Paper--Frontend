@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
 import type { BankQuestion } from "@/lib/api-types";
+import { getBengaliSubject } from "@/lib/curriculum-bengali";
 
 type TabMode = "url" | "bank" | "upload" | "templates";
 
@@ -534,10 +535,10 @@ export function ImportImageModal({
                     onChange={(e) => setSelectedBankSubject(e.target.value)}
                     className="h-8.5 rounded-md border bg-background px-2.5 text-xs font-medium"
                   >
-                    <option value="all">All Subjects</option>
+                    <option value="all">সকল বিষয়</option>
                     {bankSubjects.map((s) => (
                       <option key={s} value={s}>
-                        {s}
+                        {getBengaliSubject(s)}
                       </option>
                     ))}
                   </select>
@@ -547,7 +548,7 @@ export function ImportImageModal({
               {loadingBank && (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <span className="text-xs">Loading diagrams from question bank...</span>
+                  <span className="text-xs">প্রশ্নব্যাংক থেকে ডায়াগ্রাম লোড হচ্ছে...</span>
                 </div>
               )}
 

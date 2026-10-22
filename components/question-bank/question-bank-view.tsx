@@ -45,7 +45,7 @@ import { GeneratePaperDialog } from "./generate-paper-dialog";
 import { AddToPaperModal } from "./add-to-paper-modal";
 import { JsonImportModal } from "./json-import-modal";
 import { CreatePaperFromSelectedModal } from "./create-paper-from-selected-modal";
-import { getBengaliClass, getBengaliSubject, getBengaliChapter, toBengaliDigits } from "@/lib/curriculum-bengali";
+import { getBengaliClass, getBengaliSubject, getBengaliChapter, getBengaliBoard, getBengaliYear, toBengaliDigits } from "@/lib/curriculum-bengali";
 
 const BATCH_SIZE = 30;
 
@@ -388,13 +388,22 @@ export function QuestionBankView({
   // Available subjects for the selected class
   const availableSubjects = useMemo(() => {
     if (selectedClass === "all") {
-      const allSubjs = new Map<string, number>();
+      const allSubjs = new Map<string, { totalCount: number; nameBn?: string }>();
       hierarchy.forEach((cls) => {
         cls.subjects.forEach((s) => {
-          allSubjs.set(s.name, (allSubjs.get(s.name) || 0) + s.totalCount);
+          const prev = allSubjs.get(s.name);
+          allSubjs.set(s.name, {
+            totalCount: (prev?.totalCount || 0) + s.totalCount,
+            nameBn: s.nameBn || prev?.nameBn
+          });
         });
       });
-      return Array.from(allSubjs.entries()).map(([name, totalCount]) => ({ name, totalCount, chapters: [] }));
+      return Array.from(allSubjs.entries()).map(([name, data]) => ({
+        name,
+        nameBn: data.nameBn,
+        totalCount: data.totalCount,
+        chapters: []
+      }));
     }
     const cls = hierarchy.find((c) => c.className === selectedClass);
     return cls ? cls.subjects : [];
@@ -670,10 +679,10 @@ export function QuestionBankView({
                       ? "bg-amber-500 text-white border-amber-600 shadow-xs"
                       : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
                   }`}
-                  title={`Filter by Board: ${question.board}`}
+                  title={`বোর্ড ফিল্টার: ${getBengaliBoard(question.board)}`}
                 >
                   <Building2 className="h-3 w-3" />
-                  <span>{question.board}</span>
+                  <span>{getBengaliBoard(question.board)}</span>
                 </button>
               )}
               {question.year && (
@@ -688,19 +697,19 @@ export function QuestionBankView({
                       ? "bg-cyan-600 text-white border-cyan-700 shadow-xs"
                       : "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/20"
                   }`}
-                  title={`Filter by Year: ${question.year}`}
+                  title={`সাল ফিল্টার: ${getBengaliYear(question.year)}`}
                 >
                   <Calendar className="h-3 w-3" />
-                  <span>{question.year}</span>
+                  <span>{getBengaliYear(question.year)}</span>
                 </button>
               )}
               {isCq ? (
                 <span className="rounded-md border bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20 px-2 py-0.5 font-bold text-[11px]">
-                  CQ &middot; {question.marks || 10} marks
+                  CQ &middot; {toBengaliDigits(question.marks || 10)} নম্বর
                 </span>
               ) : (
                 <span className="rounded-md border bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 px-2 py-0.5 font-medium text-[11px]">
-                  MCQ &middot; {question.marks || 1} mark
+                  MCQ &middot; {toBengaliDigits(question.marks || 1)} নম্বর
                 </span>
               )}
               {question.nature === "mathematical" ? (
@@ -713,11 +722,11 @@ export function QuestionBankView({
                 </span>
               )}
               <span className={`rounded-md border px-2 py-0.5 font-medium capitalize text-[11px] ${diffColor}`}>
-                {question.difficulty}
+                {question.difficulty === "easy" ? "সহজ" : question.difficulty === "hard" ? "কঠিন" : "মাঝারি"}
               </span>
               {question.usageCount > 0 && (
                 <span className="text-muted-foreground text-[11px]">
-                  &middot; Used in {question.usageCount} exams
+                  &middot; {toBengaliDigits(question.usageCount)} বার ব্যবহৃত
                 </span>
               )}
 
@@ -1045,10 +1054,10 @@ export function QuestionBankView({
                 }}
                 className="h-9 w-full rounded-md border bg-background px-2.5 text-xs font-medium"
               >
-                <option value="all">সকল শ্রেণি (All Classes)</option>
+                <option value="all">সকল শ্রেণি</option>
                 {hierarchy.map((cls) => (
                   <option key={cls.className} value={cls.className}>
-                    {getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)})
+                    {cls.nameBn || getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)})
                   </option>
                 ))}
               </select>
@@ -1058,7 +1067,7 @@ export function QuestionBankView({
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1.5">
                 <BookOpen className="h-3.5 w-3.5 text-blue-500" />
-                <span>বিষয় (Subject)</span>
+                <span>বিষয়</span>
               </label>
               <select
                 value={selectedSubject}
@@ -1068,10 +1077,10 @@ export function QuestionBankView({
                 }}
                 className="h-9 w-full rounded-md border bg-background px-2.5 text-xs font-medium"
               >
-                <option value="all">সকল বিষয় (All Subjects)</option>
-                {availableSubjects.map((subj) => (
+                <option value="all">সকল বিষয়</option>
+                {availableSubjects.map((subj: any) => (
                   <option key={subj.name} value={subj.name}>
-                    {getBengaliSubject(subj.name)} ({toBengaliDigits(subj.totalCount)})
+                    {subj.nameBn || getBengaliSubject(subj.name)} ({toBengaliDigits(subj.totalCount)})
                   </option>
                 ))}
               </select>
@@ -1081,7 +1090,7 @@ export function QuestionBankView({
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5 text-emerald-500" />
-                <span>অধ্যায় (Chapter)</span>
+                <span>অধ্যায়</span>
               </label>
               <select
                 value={selectedChapter}
@@ -1089,10 +1098,10 @@ export function QuestionBankView({
                 disabled={selectedSubject === "all" && availableChapters.length === 0}
                 className="h-9 w-full rounded-md border bg-background px-2.5 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="all">সকল অধ্যায় (All Chapters)</option>
-                {availableChapters.map((ch) => (
+                <option value="all">সকল অধ্যায়</option>
+                {availableChapters.map((ch: any) => (
                   <option key={ch.name} value={ch.name}>
-                    {getBengaliChapter(ch.name)} ({toBengaliDigits(ch.totalCount)})
+                    {ch.nameBn || getBengaliChapter(ch.name)} ({toBengaliDigits(ch.totalCount)})
                   </option>
                 ))}
               </select>
@@ -1106,17 +1115,17 @@ export function QuestionBankView({
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground mb-1 flex items-center gap-1">
                   <Building2 className="h-3 w-3 text-amber-500" />
-                  <span>বোর্ড (Board)</span>
+                  <span>বোর্ড</span>
                 </label>
                 <select
                   value={selectedBoard}
                   onChange={(e) => setSelectedBoard(e.target.value)}
                   className="h-8.5 w-full rounded-md border bg-background px-2 text-xs font-medium"
                 >
-                  <option value="all">All Boards (সকল)</option>
+                  <option value="all">সকল বোর্ড</option>
                   {boards.map((b) => (
                     <option key={b.name} value={b.name}>
-                      {b.name} ({b.count})
+                      {getBengaliBoard(b.name)} ({toBengaliDigits(b.count)})
                     </option>
                   ))}
                 </select>
@@ -1126,17 +1135,17 @@ export function QuestionBankView({
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground mb-1 flex items-center gap-1">
                   <Calendar className="h-3 w-3 text-cyan-500" />
-                  <span>সাল (Year)</span>
+                  <span>সাল</span>
                 </label>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="h-8.5 w-full rounded-md border bg-background px-2 text-xs font-medium"
                 >
-                  <option value="all">All Years (সকল)</option>
+                  <option value="all">সকল সাল</option>
                   {years.map((y) => (
                     <option key={y.name} value={y.name}>
-                      {y.name} ({y.count})
+                      {getBengaliYear(y.name)} ({toBengaliDigits(y.count)})
                     </option>
                   ))}
                 </select>
@@ -1145,14 +1154,14 @@ export function QuestionBankView({
               {/* Question Type Filter */}
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                  টাইপ (Type)
+                  টাইপ
                 </label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
                   className="h-8.5 w-full rounded-md border bg-background px-2 text-xs font-medium"
                 >
-                  <option value="all">All Types (সব)</option>
+                  <option value="all">সকল টাইপ</option>
                   <option value="mcq">MCQ (বহুনির্বাচনী)</option>
                   <option value="cq">CQ (সৃজনশীল)</option>
                 </select>
@@ -1161,7 +1170,7 @@ export function QuestionBankView({
               {/* Question Nature Filter */}
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                  ধরন (Nature)
+                  ধরন
                 </label>
                 <select
                   value={selectedNature}
@@ -1169,25 +1178,25 @@ export function QuestionBankView({
                   className="h-8.5 w-full rounded-md border bg-background px-2 text-xs font-medium"
                 >
                   <option value="all">সকল ধরন</option>
-                  <option value="theory">📖 তত্ত্বীয় (Theory)</option>
-                  <option value="mathematical">🔢 গাণিতিক (Math)</option>
+                  <option value="theory">📖 তত্ত্বীয়</option>
+                  <option value="mathematical">🔢 গাণিতিক</option>
                 </select>
               </div>
 
               {/* Difficulty Filter */}
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
-                  কঠিন্য (Difficulty)
+                  কঠিন্য
                 </label>
                 <select
                   value={selectedDifficulty}
                   onChange={(e) => setSelectedDifficulty(e.target.value)}
                   className="h-8.5 w-full rounded-md border bg-background px-2 text-xs font-medium capitalize"
                 >
-                  <option value="all">All (সকল)</option>
-                  <option value="easy">Easy (সহজ)</option>
-                  <option value="medium">Medium (মাঝারি)</option>
-                  <option value="hard">Hard (কঠিন)</option>
+                  <option value="all">সকল মান</option>
+                  <option value="easy">সহজ (Easy)</option>
+                  <option value="medium">মাঝারি (Medium)</option>
+                  <option value="hard">কঠিন (Hard)</option>
                 </select>
               </div>
 
@@ -1195,17 +1204,17 @@ export function QuestionBankView({
               <div>
                 <label className="text-[11px] font-semibold text-muted-foreground mb-1 flex items-center gap-1">
                   <Tag className="h-3 w-3 text-primary" />
-                  <span>ট্যাগ (Tag)</span>
+                  <span>ট্যাগ</span>
                 </label>
                 <select
                   value={selectedTag}
                   onChange={(e) => setSelectedTag(e.target.value)}
                   className="h-8.5 w-full rounded-md border bg-background px-2 text-xs font-medium"
                 >
-                  <option value="all">All Tags (সকল)</option>
+                  <option value="all">সকল ট্যাগ</option>
                   {tags.map((t) => (
                     <option key={t.name} value={t.name}>
-                      #{t.name} ({t.count})
+                      #{t.name} ({toBengaliDigits(t.count)})
                     </option>
                   ))}
                 </select>
@@ -1222,7 +1231,7 @@ export function QuestionBankView({
                   className="h-8.5 w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 gap-1 border-dashed"
                 >
                   <X className="h-3.5 w-3.5" />
-                  <span>Reset All</span>
+                  <span>রিসেট করুন</span>
                 </Button>
               </div>
             </div>
@@ -1232,7 +1241,7 @@ export function QuestionBankView({
               <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pt-1">
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1 flex items-center gap-1">
                   <Tag className="h-3 w-3 text-muted-foreground" />
-                  Popular:
+                  জনপ্রিয় ট্যাগ:
                 </span>
                 {tags.slice(0, 10).map((t) => {
                   const isAct = selectedTag === t.name;
@@ -1272,11 +1281,11 @@ export function QuestionBankView({
                 {loadingQuestions && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
                 {selectedIds.size > 0 ? (
                   <span className="font-medium text-foreground">
-                    {selectedIds.size} of {totalCount.toLocaleString()} selected
+                    {toBengaliDigits(selectedIds.size)} / {toBengaliDigits(totalCount)} নির্বাচিত
                   </span>
                 ) : (
                   <span className="font-semibold text-foreground">
-                    Total: {totalCount.toLocaleString()} questions
+                    মোট: {toBengaliDigits(totalCount)} টি প্রশ্ন
                   </span>
                 )}
               </span>
@@ -1290,10 +1299,10 @@ export function QuestionBankView({
                 variant={groupByChapter ? "primary" : "outline"}
                 onClick={() => setGroupByChapter((v) => !v)}
                 className="h-8 text-xs gap-1.5"
-                title="Toggle Group by Chapter"
+                title="অধ্যায় অনুসারে বিন্যাস টগল করুন"
               >
                 <Layers className="h-3.5 w-3.5" />
-                <span>{groupByChapter ? "Grouped by Chapter" : "Group by Chapter"}</span>
+                <span>{groupByChapter ? "অধ্যায় অনুসারে বিন্যস্ত" : "অধ্যায় অনুসারে বিন্যাস"}</span>
               </Button>
 
               {selectedIds.size > 0 && (
@@ -1304,7 +1313,7 @@ export function QuestionBankView({
                     className="h-8 text-xs font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xs gap-1.5"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
-                    Create Paper ({selectedIds.size})
+                    প্রশ্নপত্র তৈরি করুন ({toBengaliDigits(selectedIds.size)})
                   </Button>
                   <Button
                     size="sm"
@@ -1317,7 +1326,7 @@ export function QuestionBankView({
                     }
                     className="h-8 text-xs"
                   >
-                    <BookOpen className="h-3.5 w-3.5 mr-1" /> Add to Paper
+                    <BookOpen className="h-3.5 w-3.5 mr-1" /> প্রশ্নপত্রে যোগ করুন
                   </Button>
                   {isAdmin && (
                     <Button
@@ -1326,24 +1335,24 @@ export function QuestionBankView({
                       onClick={() => setDeleteTarget({ open: true, isBatch: true })}
                       className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> মুছে ফেলুন
                     </Button>
                   )}
                 </>
               )}
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span>Sort:</span>
+                <span>সাজান:</span>
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
                   className="h-8 rounded-md border bg-background px-2 text-xs font-medium"
                 >
-                  <option value="chapter">Chapter sequence (অধ্যায় ক্রম)</option>
-                  <option value="newest">Recently updated</option>
-                  <option value="most_used">Most used in exams</option>
-                  <option value="title">Title (A &rarr; Z)</option>
-                  <option value="oldest">Oldest first</option>
+                  <option value="chapter">অধ্যায় ক্রম অনুসারে</option>
+                  <option value="newest">সর্বশেষ সংযোজিত</option>
+                  <option value="most_used">সবচেয়ে বেশি ব্যবহৃত</option>
+                  <option value="title">শিরোনাম (অ &rarr; হ)</option>
+                  <option value="oldest">প্রাচীনতম প্রথমে</option>
                 </select>
               </div>
             </div>
@@ -1352,10 +1361,10 @@ export function QuestionBankView({
           {/* Active Filter Pills (Board, Year, Chapter, Tag) */}
           {(selectedBoard !== "all" || selectedYear !== "all" || selectedTag !== "all" || selectedChapter !== "all") && (
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-muted-foreground text-[11px]">Active Filters:</span>
+              <span className="text-muted-foreground text-[11px]">সক্রিয় ফিল্টার:</span>
               {selectedBoard !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 font-medium text-amber-700 dark:text-amber-400 text-[11px]">
-                  <span>Board: {selectedBoard}</span>
+                  <span>বোর্ড: {getBengaliBoard(selectedBoard)}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedBoard("all")}
@@ -1367,7 +1376,7 @@ export function QuestionBankView({
               )}
               {selectedYear !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-0.5 font-medium text-cyan-700 dark:text-cyan-400 text-[11px]">
-                  <span>Year: {selectedYear}</span>
+                  <span>সাল: {getBengaliYear(selectedYear)}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedYear("all")}
@@ -1391,7 +1400,7 @@ export function QuestionBankView({
               )}
               {selectedTag !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 font-medium text-indigo-600 dark:text-indigo-400 text-[11px]">
-                  <span>Tag: #{selectedTag}</span>
+                  <span>ট্যাগ: #{selectedTag}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedTag("all")}

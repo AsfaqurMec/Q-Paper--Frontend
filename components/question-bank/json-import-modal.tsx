@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, clientApi } from "@/lib/client-api";
 import type { ClassHierarchy, QuestionImportResult } from "@/lib/api-types";
+import { getBengaliClass, getBengaliSubject, getBengaliChapter } from "@/lib/curriculum-bengali";
 
 function extractChapterNumber(name: string): number {
   if (!name) return 9999;
@@ -354,16 +355,16 @@ export function JsonImportModal({
               {/* Class */}
               <div>
                 <label className="text-[11px] font-semibold text-foreground block mb-1">
-                  শ্রেণি (Class / Level) <span className="text-destructive">*</span>
+                  শ্রেণি <span className="text-destructive">*</span>
                 </label>
                 <Select value={selectedClass} onValueChange={handleClassChange}>
                   <SelectTrigger className="h-8 text-xs bg-background">
-                    <SelectValue placeholder="Select Class" />
+                    <SelectValue placeholder="শ্রেণি নির্বাচন করুন" />
                   </SelectTrigger>
                   <SelectContent>
                     {hierarchy.map((cls) => (
                       <SelectItem key={cls.className} value={cls.className}>
-                        {cls.className}
+                        {cls.nameBn || getBengaliClass(cls.className)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -373,7 +374,7 @@ export function JsonImportModal({
               {/* Subject */}
               <div>
                 <label className="text-[11px] font-semibold text-foreground block mb-1">
-                  বিষয় (Subject) <span className="text-destructive">*</span>
+                  বিষয় <span className="text-destructive">*</span>
                 </label>
                 <Select
                   value={selectedSubject}
@@ -381,12 +382,12 @@ export function JsonImportModal({
                   disabled={availableSubjects.length === 0}
                 >
                   <SelectTrigger className="h-8 text-xs bg-background">
-                    <SelectValue placeholder={availableSubjects.length ? "Select Subject" : "No subjects"} />
+                    <SelectValue placeholder={availableSubjects.length ? "বিষয় নির্বাচন করুন" : "কোনো বিষয় নেই"} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableSubjects.map((s) => (
                       <SelectItem key={s.name} value={s.name}>
-                        {s.name}
+                        {s.nameBn || getBengaliSubject(s.name)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -397,20 +398,20 @@ export function JsonImportModal({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[11px] font-semibold text-foreground">
-                    অধ্যায় (Chapter)
+                    অধ্যায়
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsCustomChapter(!isCustomChapter)}
                     className="text-[10px] text-primary hover:underline font-medium"
                   >
-                    {isCustomChapter ? "Choose from List" : "+ Custom Chapter"}
+                    {isCustomChapter ? "তালিকা থেকে পছন্দ" : "+ কাস্টম অধ্যায়"}
                   </button>
                 </div>
 
                 {isCustomChapter ? (
                   <Input
-                    placeholder="e.g. অধ্যায় ১: গতি"
+                    placeholder="e.g. অধ্যায় ১: বাস্তব সংখ্যা"
                     value={customChapterInput}
                     onChange={(e) => setCustomChapterInput(e.target.value)}
                     className="h-8 text-xs bg-background"
@@ -422,15 +423,15 @@ export function JsonImportModal({
                     disabled={availableChapters.length === 0}
                   >
                     <SelectTrigger className="h-8 text-xs bg-background">
-                      <SelectValue placeholder={availableChapters.length ? "Select Chapter" : "No chapters"} />
+                      <SelectValue placeholder={availableChapters.length ? "অধ্যায় নির্বাচন করুন" : "কোনো অধ্যায় নেই"} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableChapters.map((ch) => (
                         <SelectItem key={ch.name} value={ch.name}>
-                          {ch.name}
+                          {ch.nameBn || getBengaliChapter(ch.name)}
                         </SelectItem>
                       ))}
-                      <SelectItem value="__custom__">+ Custom Chapter...</SelectItem>
+                      <SelectItem value="__custom__">+ কাস্টম অধ্যায়...</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

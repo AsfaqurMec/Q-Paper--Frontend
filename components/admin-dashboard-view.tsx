@@ -44,6 +44,7 @@ import { AdminCurriculumView } from "@/components/admin-curriculum-view";
 import { AdminUserManagementView } from "@/components/admin-user-management-view";
 import { AdminPlansView } from "@/components/admin-plans-view";
 import type { AdminDashboard, AdminPaperItem, AdminUser, ClassHierarchy, PaymentOption, PaymentRequest, Plan, QuestionImportResult, SupportTicket } from "@/lib/api-types";
+import { getBengaliSubject, getBengaliClass } from "@/lib/curriculum-bengali";
 
 function extractChapterNumber(name: string): number {
   if (!name) return 9999;
@@ -985,13 +986,13 @@ export function AdminDashboardView({
 
                 <Select value={paperSubjectFilter} onValueChange={setPaperSubjectFilter}>
                   <SelectTrigger className="text-xs h-8 w-36">
-                    <SelectValue placeholder="Subject" />
+                    <SelectValue placeholder="বিষয়" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="text-xs">All Subjects</SelectItem>
+                    <SelectItem value="all" className="text-xs">সকল বিষয়</SelectItem>
                     {paperSubjects.map((s) => (
                       <SelectItem key={s} value={s} className="text-xs">
-                        {s}
+                        {getBengaliSubject(s)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1030,8 +1031,8 @@ export function AdminDashboardView({
                       <div className="text-muted-foreground text-[11px] font-mono">{p.ownerEmail}</div>
                     </td>
                     <td className="p-3">
-                      <div className="font-medium text-foreground">{p.subject}</div>
-                      <div className="text-muted-foreground text-[11px]">{p.className}</div>
+                      <div className="font-medium text-foreground">{getBengaliSubject(p.subject)}</div>
+                      <div className="text-muted-foreground text-[11px]">{getBengaliClass(p.className)}</div>
                     </td>
                     <td className="p-3">
                       <div className="font-semibold text-foreground">{p.totalMarks} Marks</div>

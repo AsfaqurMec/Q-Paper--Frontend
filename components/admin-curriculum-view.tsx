@@ -40,6 +40,7 @@ import {
 import { useAppModal } from "@/components/modal-provider";
 import { clientApi } from "@/lib/client-api";
 import { toStandardDigits } from "@/lib/utils";
+import { getBengaliClass, getBengaliSubject, getBengaliChapter } from "@/lib/curriculum-bengali";
 import type {
   AcademicClass,
   AcademicClassDetail,
@@ -833,13 +834,13 @@ export function AdminCurriculumView({
           {(activeTab === "subjects" || activeTab === "chapters") && (
             <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter}>
               <SelectTrigger className="h-8 text-xs w-[140px]">
-                <SelectValue placeholder="Filter Class" />
+                <SelectValue placeholder="শ্রেণি ফিল্টার" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
+                <SelectItem value="all">সকল শ্রেণি</SelectItem>
                 {classes.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.name}
+                    {c.nameBn || getBengaliClass(c.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -850,13 +851,13 @@ export function AdminCurriculumView({
           {activeTab === "chapters" && (
             <Select value={selectedSubjectFilter} onValueChange={setSelectedSubjectFilter}>
               <SelectTrigger className="h-8 text-xs w-[140px]">
-                <SelectValue placeholder="Filter Subject" />
+                <SelectValue placeholder="বিষয় ফিল্টার" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
+                <SelectItem value="all">সকল বিষয়</SelectItem>
                 {subjectsForSelectedClass.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name}
+                    {s.nameBn || getBengaliSubject(s.name)}
                   </SelectItem>
                 ))}
               </SelectContent>

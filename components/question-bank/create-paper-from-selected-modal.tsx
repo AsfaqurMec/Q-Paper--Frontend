@@ -436,7 +436,7 @@ export function CreatePaperFromSelectedModal({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
-                    শ্রেণি / শিক্ষাস্তর (Class / Level) *
+                    শ্রেণি / শিক্ষাস্তর *
                   </label>
                   {hierarchy.length > 0 ? (
                     <select
@@ -452,7 +452,7 @@ export function CreatePaperFromSelectedModal({
                     >
                       {hierarchy.map((c) => (
                         <option key={c.className} value={c.className}>
-                          {getBengaliClass(c.className)}
+                          {c.nameBn || getBengaliClass(c.className)}
                         </option>
                       ))}
                     </select>
@@ -470,7 +470,7 @@ export function CreatePaperFromSelectedModal({
 
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
-                    বিষয় (Subject) *
+                    বিষয় *
                   </label>
                   {availableSubjects.length > 0 ? (
                     <select
@@ -480,7 +480,7 @@ export function CreatePaperFromSelectedModal({
                     >
                       {availableSubjects.map((s) => (
                         <option key={s.name} value={s.name}>
-                          {getBengaliSubject(s.name)}
+                          {s.nameBn || getBengaliSubject(s.name)}
                         </option>
                       ))}
                     </select>

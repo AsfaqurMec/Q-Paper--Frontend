@@ -202,6 +202,7 @@ export type ChapterHierarchy = {
   subjectId?: string;
   chapterNumber?: number;
   name: string;
+  nameBn?: string;
   mcqCount: number;
   cqCount: number;
   totalCount: number;
@@ -211,6 +212,7 @@ export type SubjectHierarchy = {
   id?: string;
   classId?: string;
   name: string;
+  nameBn?: string;
   code?: string;
   category?: string;
   mcqCount: number;
@@ -222,6 +224,7 @@ export type SubjectHierarchy = {
 export type ClassHierarchy = {
   id?: string;
   className: string;
+  nameBn?: string;
   code?: string;
   mcqCount: number;
   cqCount: number;
@@ -232,6 +235,7 @@ export type ClassHierarchy = {
 export type AcademicClass = {
   id: string;
   name: string;
+  nameBn?: string;
   code: string;
   aliases: string[];
   order: number;
@@ -257,6 +261,7 @@ export type SubjectEntity = {
   classId: string;
   className?: string;
   name: string;
+  nameBn?: string;
   code: string;
   category: string;
   aliases: string[];
@@ -285,6 +290,7 @@ export type ChapterEntity = {
   subjectName?: string;
   chapterNumber: number;
   name: string;
+  nameBn?: string;
   aliases?: string[];
   order: number;
   status: "active" | "inactive";

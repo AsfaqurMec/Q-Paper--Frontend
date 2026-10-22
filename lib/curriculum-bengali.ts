@@ -316,3 +316,42 @@ export function getBengaliChapter(chapterName?: string | null): string {
 
   return trimmed;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boards & Years Mapping
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const BOARD_BENGALI_MAP: Record<string, string> = {
+  "Dhaka": "ঢাকা বোর্ড",
+  "Rajshahi": "রাজশাহী বোর্ড",
+  "Cumilla": "কুমিল্লা বোর্ড",
+  "Comilla": "কুমিল্লা বোর্ড",
+  "Jessore": "যশোর বোর্ড",
+  "Chittagong": "চট্টগ্রাম বোর্ড",
+  "Chattogram": "চট্টগ্রাম বোর্ড",
+  "Barisal": "বরিশাল বোর্ড",
+  "Barishal": "বরিশাল বোর্ড",
+  "Sylhet": "সিলেট বোর্ড",
+  "Dinajpur": "দিনাজপুর বোর্ড",
+  "Mymensingh": "ময়মনসিংহ বোর্ড",
+  "Madrasah": "মাদ্রাসা বোর্ড",
+  "Technical": "কারিগরি বোর্ড",
+  "All Board": "সকল বোর্ড",
+  "All Boards": "সকল বোর্ড"
+};
+
+export function getBengaliBoard(boardName?: string | null): string {
+  if (!boardName) return "";
+  if (/[\u0980-\u09FF]/.test(boardName)) return boardName;
+  const trimmed = boardName.trim();
+  for (const [key, val] of Object.entries(BOARD_BENGALI_MAP)) {
+    if (key.toLowerCase() === trimmed.toLowerCase()) return val;
+    if (trimmed.toLowerCase().startsWith(key.toLowerCase())) return val;
+  }
+  return trimmed;
+}
+
+export function getBengaliYear(year?: string | number | null): string {
+  if (!year) return "";
+  return toBengaliDigits(year);
+}

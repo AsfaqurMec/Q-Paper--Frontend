@@ -109,8 +109,8 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
               <Settings2 className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">Edit Exam & Paper Details</h2>
-              <p className="text-xs text-muted-foreground">Modify the metadata, layout, and instructions for this paper</p>
+              <h2 className="text-lg font-semibold">পরীক্ষা ও প্রশ্নপত্রের বিবরণ সম্পাদনা</h2>
+              <p className="text-xs text-muted-foreground">মেটাডাটা, লেআউট এবং সাধারণ নির্দেশনা পরিবর্তন করুন</p>
             </div>
           </div>
           <button
@@ -132,7 +132,7 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Paper / Exam Title *
+                প্রশ্নপত্র / পরীক্ষার শিরোনাম *
               </label>
               <input
                 type="text"
@@ -140,13 +140,13 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="e.g. SSC Physics Model Test 2026"
+                placeholder="যেমন: এসএসসি পদার্থবিজ্ঞান মডেল টেস্ট ২০২৬"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Subject *
+                বিষয় *
               </label>
               <input
                 type="text"
@@ -154,52 +154,52 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
                 value={formData.subject}
                 onChange={(e) => setFormData((prev) => ({ ...prev, subject: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="e.g. Physics"
+                placeholder="যেমন: পদার্থবিজ্ঞান বা Physics"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Class / Grade
+                শ্রেণি / গ্রেড
               </label>
               <input
                 type="text"
                 value={formData.className}
                 onChange={(e) => setFormData((prev) => ({ ...prev, className: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="e.g. Class 10"
+                placeholder="যেমন: ৯ম-১০ম শ্রেণি বা Class 10"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Institute / School Name
+                প্রতিষ্ঠান / স্কুলের নাম
               </label>
               <input
                 type="text"
                 value={formData.institute}
                 onChange={(e) => setFormData((prev) => ({ ...prev, institute: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="e.g. Dhaka Residential Model College"
+                placeholder="যেমন: ঢাকা রেসিডেন্সিয়াল মডেল কলেজ"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Duration
+                সময়
               </label>
               <input
                 type="text"
                 value={formData.duration}
                 onChange={(e) => setFormData((prev) => ({ ...prev, duration: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="e.g. 45 minutes"
+                placeholder="যেমন: ৪৫ মিনিট বা 45 minutes"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total Marks
+                মোট নম্বর
               </label>
               <input
                 type="text"
@@ -217,120 +217,120 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
                     setFormData((prev) => ({ ...prev, totalMarks: 30 }));
                   }
                 }}
-                placeholder="e.g. 30"
+                placeholder="যেমন: ৩০"
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Page Layout
+                পৃষ্ঠা লেআউট
               </label>
               <select
                 value={formData.layout}
                 onChange={(e) => setFormData((prev) => ({ ...prev, layout: e.target.value as "single" | "split" }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="split">Split (2 Columns - Standard Exam)</option>
-                <option value="single">Single (1 Column - Full Width)</option>
+                <option value="split">২ কলাম (Split - Standard Exam)</option>
+                <option value="single">১ কলাম (Single - Full Width)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                CQ Layout
+                CQ লেআউট
               </label>
               <select
                 value={formData.cqLayout}
                 onChange={(e) => setFormData((prev) => ({ ...prev, cqLayout: e.target.value as "single" | "split" }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="split">Split (2 Columns)</option>
-                <option value="single">Single (1 Column - Full Width)</option>
+                <option value="split">২ কলাম (Split - 2 Columns)</option>
+                <option value="single">১ কলাম (Single - Full Width)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Questions Per Page
+                প্রতি পৃষ্ঠায় প্রশ্ন সংখ্যা
               </label>
               <select
                 value={formData.questionsPerPage}
                 onChange={(e) => setFormData((prev) => ({ ...prev, questionsPerPage: Number(e.target.value) }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               >
-                <option value={0}>Auto Adjust (Fit to Page Height)</option>
-                <option value={5}>5 questions</option>
-                <option value={8}>8 questions</option>
-                <option value={10}>10 questions (Recommended)</option>
-                <option value={12}>12 questions</option>
-                <option value={15}>15 questions</option>
-                <option value={20}>20 questions</option>
+                <option value={0}>স্বয়ংক্রিয় সমন্বয় (Auto Adjust)</option>
+                <option value={5}>৫ টি প্রশ্ন</option>
+                <option value={8}>৮ টি প্রশ্ন</option>
+                <option value={10}>১০ টি প্রশ্ন (প্রস্তাবিত)</option>
+                <option value={12}>১২ টি প্রশ্ন</option>
+                <option value={15}>১৫ টি প্রশ্ন</option>
+                <option value={20}>২০ টি প্রশ্ন</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                MCQ Option Numbering Style
+                বহুনির্বাচনী অপশন ফরম্যাট
               </label>
               <select
                 value={formData.optionLabelStyle}
                 onChange={(e) => setFormData((prev) => ({ ...prev, optionLabelStyle: e.target.value as Paper["optionLabelStyle"] }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               >
-                <option value="bangla">(ক), (খ), (গ), (ঘ) — Bangla NCTB Standard</option>
-                <option value="upper-alpha">(A), (B), (C), (D) — English Upper-case</option>
-                <option value="lower-alpha">(a), (b), (c), (d) — English Lower-case</option>
-                <option value="numeric">(1), (2), (3), (4) — Numeric</option>
+                <option value="bangla">(ক), (খ), (গ), (ঘ) — বাংলা NCTB ফরম্যাট</option>
+                <option value="upper-alpha">(A), (B), (C), (D) — ইংরেজি বড় হাতের</option>
+                <option value="lower-alpha">(a), (b), (c), (d) — ইংরেজি ছোট হাতের</option>
+                <option value="numeric">(1), (2), (3), (4) — সংখ্যা</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                MCQ Section Heading
+                MCQ বিভাগের শিরোনাম
               </label>
               <input
                 type="text"
                 value={formData.mcqSectionTitle}
                 onChange={(e) => setFormData((prev) => ({ ...prev, mcqSectionTitle: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="Default: ক-বিভাগ: বহু-নির্বাচনী প্রশ্ন"
+                placeholder="ডিফল্ট: ক-বিভাগ: বহু-নির্বাচনী প্রশ্ন"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                CQ Section Heading
+                CQ বিভাগের শিরোনাম
               </label>
               <input
                 type="text"
                 value={formData.cqSectionTitle}
                 onChange={(e) => setFormData((prev) => ({ ...prev, cqSectionTitle: e.target.value }))}
                 className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="Default: খ-বিভাগ: সৃজনশীল প্রশ্ন"
+                placeholder="ডিফল্ট: খ-বিভাগ: সৃজনশীল প্রশ্ন"
               />
             </div>
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Instructions
+                সাধারণ নির্দেশনা (Instructions)
               </label>
               <textarea
                 rows={2}
                 value={formData.instructions}
                 onChange={(e) => setFormData((prev) => ({ ...prev, instructions: e.target.value }))}
                 className="mt-1 w-full rounded-md border bg-background p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="e.g. Answer all questions. Each question carries equal marks."
+                placeholder="যেমন: সকল প্রশ্নের উত্তর দাও। প্রতিটি প্রশ্নের মান সমান।"
               />
             </div>
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
+              বাতিল
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save Details"}
+              {loading ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ করুন"}
             </Button>
           </div>
         </form>

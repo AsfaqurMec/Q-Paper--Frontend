@@ -192,13 +192,13 @@ export function PaperCreationWizard({
 
           {step === 3 && (
             <div className="grid gap-4 md:grid-cols-2">
-              <TextField label="Paper name" value={form.name} onChange={(value) => updateForm("name", value)} placeholder="SSC Physics Model Test" />
-              <TextField label="Subject" value={form.subject} onChange={(value) => updateForm("subject", value)} placeholder="Physics" />
-              <TextField label="Class" value={form.className} onChange={(value) => updateForm("className", value)} placeholder="Class 10" />
-              <TextField label="Exam type" value={form.examType} onChange={(value) => updateForm("examType", value)} placeholder="Model Test" />
-              <TextField label="Duration" value={form.duration} onChange={(value) => updateForm("duration", value)} placeholder="45 minutes" />
+              <TextField label="প্রশ্নপত্রের নাম" value={form.name} onChange={(value) => updateForm("name", value)} placeholder="যেমন: এসএসসি পদার্থবিজ্ঞান মডেল টেস্ট ২০২৬" />
+              <TextField label="বিষয়" value={form.subject} onChange={(value) => updateForm("subject", value)} placeholder="যেমন: পদার্থবিজ্ঞান বা Physics" />
+              <TextField label="শ্রেণি" value={form.className} onChange={(value) => updateForm("className", value)} placeholder="যেমন: ৯ম-১০ম শ্রেণি বা Class 10" />
+              <TextField label="পরীক্ষার ধরন" value={form.examType} onChange={(value) => updateForm("examType", value)} placeholder="যেমন: মডেল টেস্ট" />
+              <TextField label="সময়" value={form.duration} onChange={(value) => updateForm("duration", value)} placeholder="যেমন: ৪৫ মিনিট" />
               <TextField
-                label="Total marks"
+                label="মোট নম্বর"
                 value={form.totalMarks}
                 onChange={(value) => {
                   const std = toStandardDigits(value);
@@ -212,58 +212,58 @@ export function PaperCreationWizard({
                     updateForm("totalMarks", "30");
                   }
                 }}
-                placeholder="100"
+                placeholder="যেমন: ১০০"
                 type="text"
                 inputMode="numeric"
               />
               <label className="text-sm font-medium">
-                Layout
+                লেআউট (Layout)
                 <select value={form.layout} onChange={(event) => updateForm("layout", event.target.value as Paper["layout"])} className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm">
-                  <option value="split">Split (2 Columns)</option>
-                  <option value="single">Single (1 Column)</option>
+                  <option value="split">২ কলাম (Split - 2 Columns)</option>
+                  <option value="single">১ কলাম (Single - 1 Column)</option>
                 </select>
               </label>
               <label className="text-sm font-medium">
-                CQ Layout
+                CQ লেআউট (CQ Layout)
                 <select value={form.cqLayout || form.layout} onChange={(event) => updateForm("cqLayout", event.target.value as Paper["layout"])} className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm">
-                  <option value="split">Split (2 Columns)</option>
-                  <option value="single">Single (1 Column - Full Width)</option>
+                  <option value="split">২ কলাম (Split - 2 Columns)</option>
+                  <option value="single">১ কলাম (Single - Full Width)</option>
                 </select>
               </label>
               <label className="text-sm font-medium">
-                Questions per page
+                প্রতি পৃষ্ঠায় প্রশ্ন সংখ্যা
                 <select
                   value={form.questionsPerPage}
                   onChange={(event) => updateForm("questionsPerPage", event.target.value)}
                   className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm font-medium"
                 >
-                  <option value="0">Auto Adjust (Fit to Page Height)</option>
-                  <option value="5">5 questions</option>
-                  <option value="8">8 questions</option>
-                  <option value="10">10 questions (Recommended)</option>
-                  <option value="12">12 questions</option>
-                  <option value="15">15 questions</option>
-                  <option value="20">20 questions</option>
+                  <option value="0">স্বয়ংক্রিয় সমন্বয় (Auto Adjust)</option>
+                  <option value="5">৫ টি প্রশ্ন</option>
+                  <option value="8">৮ টি প্রশ্ন</option>
+                  <option value="10">১০ টি প্রশ্ন (প্রস্তাবিত)</option>
+                  <option value="12">১২ টি প্রশ্ন</option>
+                  <option value="15">১৫ টি প্রশ্ন</option>
+                  <option value="20">২০ টি প্রশ্ন</option>
                 </select>
               </label>
               <label className="text-sm font-medium">
-                MCQ Option Style
+                বহুনির্বাচনী অপশন ফরম্যাট
                 <select
                   value={form.optionLabelStyle}
                   onChange={(event) => updateForm("optionLabelStyle", event.target.value as Paper["optionLabelStyle"])}
                   className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm font-medium"
                 >
-                  <option value="bangla">(ক), (খ), (গ), (ঘ) — Bangla NCTB Standard</option>
-                  <option value="upper-alpha">(A), (B), (C), (D) — English Upper-case</option>
-                  <option value="lower-alpha">(a), (b), (c), (d) — English Lower-case</option>
-                  <option value="numeric">(1), (2), (3), (4) — Numeric</option>
+                  <option value="bangla">(ক), (খ), (গ), (ঘ) — বাংলা NCTB ফরম্যাট</option>
+                  <option value="upper-alpha">(A), (B), (C), (D) — ইংরেজি বড় হাতের</option>
+                  <option value="lower-alpha">(a), (b), (c), (d) — ইংরেজি ছোট হাতের</option>
+                  <option value="numeric">(1), (2), (3), (4) — সংখ্যা</option>
                 </select>
               </label>
-              <TextField label="MCQ Section Heading" value={form.mcqSectionTitle || ""} onChange={(value) => updateForm("mcqSectionTitle", value)} placeholder="Default: ক-বিভাগ: বহু-নির্বাচনী প্রশ্ন" />
-              <TextField label="CQ Section Heading" value={form.cqSectionTitle || ""} onChange={(value) => updateForm("cqSectionTitle", value)} placeholder="Default: খ-বিভাগ: সৃজনশীল প্রশ্ন" />
+              <TextField label="MCQ বিভাগের শিরোনাম" value={form.mcqSectionTitle || ""} onChange={(value) => updateForm("mcqSectionTitle", value)} placeholder="ডিফল্ট: ক-বিভাগ: বহু-নির্বাচনী প্রশ্ন" />
+              <TextField label="CQ বিভাগের শিরোনাম" value={form.cqSectionTitle || ""} onChange={(value) => updateForm("cqSectionTitle", value)} placeholder="ডিফল্ট: খ-বিভাগ: সৃজনশীল প্রশ্ন" />
               <label className="text-sm font-medium md:col-span-2">
-                Instructions
-                <textarea value={form.instructions} onChange={(event) => updateForm("instructions", event.target.value)} className="mt-1 min-h-24 w-full rounded-md border bg-background p-3 text-sm" placeholder="Choose the correct answer. Each question carries equal marks." />
+                নির্দেশনা (Instructions)
+                <textarea value={form.instructions} onChange={(event) => updateForm("instructions", event.target.value)} className="mt-1 min-h-24 w-full rounded-md border bg-background p-3 text-sm" placeholder="সঠিক উত্তরের বৃত্তটি ভরাট কর। প্রতিটি প্রশ্নের মান সমান।" />
               </label>
             </div>
           )}
