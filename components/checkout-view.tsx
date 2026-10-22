@@ -33,20 +33,22 @@ import { clientApi } from "@/lib/client-api";
 import type { PaymentOption, PaymentRequest, Plan, UserSession } from "@/lib/api-types";
 
 type PlanDetail = {
-  code: "small" | "pro" | "ultra" | "diamond";
+  code: string;
   name: string;
   price: number;
   interval: string;
+  duration?: string;
   badge: string;
   features: string[];
 };
 
-const PLAN_DATA: Record<"small" | "pro" | "ultra" | "diamond", PlanDetail> = {
+const PLAN_DATA: Record<string, PlanDetail> = {
   small: {
     code: "small",
     name: "Small Package",
     price: 100,
     interval: "মাসিক (Monthly)",
+    duration: "৩০ দিন (১ মাস)",
     badge: "একক শিক্ষক ও টিউটর",
     features: [
       "সর্বোচ্চ ১০০টি প্রশ্নপত্র তৈরি (100 Papers quota)",
@@ -62,6 +64,7 @@ const PLAN_DATA: Record<"small" | "pro" | "ultra" | "diamond", PlanDetail> = {
     name: "Pro Package",
     price: 500,
     interval: "মাসিক (Monthly)",
+    duration: "৩০ দিন (১ মাস)",
     badge: "ব্যক্তিগত শিক্ষক ও কোচিং",
     features: [
       "সর্বোচ্চ ২,০০০টি প্রশ্নপত্র তৈরি (2,000 Papers quota)",
@@ -77,6 +80,7 @@ const PLAN_DATA: Record<"small" | "pro" | "ultra" | "diamond", PlanDetail> = {
     name: "Ultra Package",
     price: 1000,
     interval: "মাসিক (Monthly)",
+    duration: "৩০ দিন (১ মাস)",
     badge: "অল-ইন-ওয়ান সম্পূর্ণ সমাধান",
     features: [
       "সর্বোচ্চ ৫,০০০টি প্রশ্নপত্র তৈরি (5,000 Papers quota)",
@@ -93,6 +97,7 @@ const PLAN_DATA: Record<"small" | "pro" | "ultra" | "diamond", PlanDetail> = {
     name: "Diamond Package",
     price: 3500,
     interval: "মাসিক (Monthly)",
+    duration: "৩০ দিন (১ মাস)",
     badge: "আনলিমিটেড সুপার প্যাকেজ",
     features: [
       "সম্পূর্ণ আনলিমিটেড প্রশ্নপত্র তৈরি (Unlimited Papers)",
@@ -120,16 +125,23 @@ export function CheckoutView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPlanParam = searchParams.get("plan");
-  const defaultPlan: "small" | "pro" | "ultra" | "diamond" =
-    initialPlanParam === "diamond"
-      ? "diamond"
-      : initialPlanParam === "ultra"
-      ? "ultra"
-      : initialPlanParam === "small"
-      ? "small"
-      : "pro";
 
-  const [selectedPlan, setSelectedPlan] = useState<"small" | "pro" | "ultra" | "diamond">(defaultPlan);
+  const paidPlans =
+    initialPlans && initialPlans.length > 0
+      ? initialPlans.filter((p) => p.code !== "free" && p.isActive !== false)
+      : [
+          { code: "small", name: "Small", price: 100, duration: "৩০ দিন (১ মাস)" },
+          { code: "pro", name: "Pro", price: 500, duration: "৩০ দিন (১ মাস)" },
+          { code: "ultra", name: "Ultra", price: 1000, duration: "৩০ দিন (১ মাস)" },
+          { code: "diamond", name: "Diamond", price: 3500, duration: "৩০ দিন (১ মাস)" }
+        ];
+
+  const defaultPlan =
+    initialPlanParam && paidPlans.some((p) => p.code === initialPlanParam)
+      ? initialPlanParam
+      : (paidPlans.find((p) => p.code === "pro")?.code || paidPlans[0]?.code || "pro");
+
+  const [selectedPlan, setSelectedPlan] = useState<string>(defaultPlan);
   const [paymentOptions] = useState<PaymentOption[]>(initialOptions);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(
     initialOptions.length > 0 ? initialOptions[0].id : null
@@ -146,13 +158,16 @@ export function CheckoutView({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const dbPlan = initialPlans?.find((p) => p.code === selectedPlan);
-  const basePlanInfo = PLAN_DATA[selectedPlan];
+  const basePlanInfo = selectedPlan in PLAN_DATA ? PLAN_DATA[selectedPlan] : null;
   const currentPlanInfo: PlanDetail = {
     code: selectedPlan,
-    name: dbPlan ? `${dbPlan.name} Package` : basePlanInfo.name,
-    price: dbPlan ? dbPlan.price : basePlanInfo.price,
-    interval: dbPlan ? (dbPlan.interval === "month" ? "মাসিক (Monthly)" : "এককালীন") : basePlanInfo.interval,
-    badge: basePlanInfo.badge,
+    name: dbPlan
+      ? (dbPlan.name.toLowerCase().includes("package") ? dbPlan.name : `${dbPlan.name} Package`)
+      : (basePlanInfo?.name || `${selectedPlan} Package`),
+    price: dbPlan ? dbPlan.price : (basePlanInfo?.price || 0),
+    interval: dbPlan?.duration || basePlanInfo?.interval || "৩০ দিন (১ মাস)",
+    duration: dbPlan?.duration || basePlanInfo?.duration || "৩০ দিন (১ মাস)",
+    badge: basePlanInfo?.badge || (dbPlan?.code === "diamond" ? "আনলিমিটেড সুপার প্যাকেজ" : "প্রিমিয়াম প্যাকেজ"),
     features: dbPlan
       ? [
           dbPlan.paperLimit >= 999999
@@ -174,12 +189,16 @@ export function CheckoutView({
             ? (dbPlan.code === "diamond" ? "স্কুল/কোচিং সেন্টারের নিজস্ব লোগো ও ফুল ব্র্যান্ডিং" : "প্রতিষ্ঠানের নিজস্ব নাম ও ব্র্যান্ডিং")
             : "ডিভাইস যাচাইকরণ ও নিরাপদ অ্যাক্সেস"
         ]
-      : basePlanInfo.features
+      : (basePlanInfo?.features || [
+          "উচ্চ মানের প্রশ্নপত্র ও ওএমআর তৈরি",
+          "PDF এক্সপোর্ট সুবিধা",
+          "ডিভাইস যাচাইকরণ ও নিরাপদ অ্যাক্সেস"
+        ])
   };
 
-  const getPlanPrice = (code: "small" | "pro" | "ultra" | "diamond") => {
+  const getPlanPrice = (code: string) => {
     const p = initialPlans?.find((x) => x.code === code);
-    return p ? p.price : PLAN_DATA[code].price;
+    return p ? p.price : (PLAN_DATA[code]?.price || 0);
   };
 
   const activeOption = paymentOptions.find((opt) => opt.id === selectedOptionId) || null;
@@ -333,63 +352,44 @@ export function CheckoutView({
                     <Sparkles className="h-4 w-4 text-primary" />
                     ১. প্যাকেজ নির্বাচন (Select Plan)
                   </CardTitle>
-                  <Badge variant="outline" className="text-xs">মাসিক বিলিং</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {currentPlanInfo.duration || "নির্ধারিত মেয়াদ"}
+                  </Badge>
                 </div>
                 <CardDescription className="text-xs">
                   আপনি কোন প্যাকেজটি নিতে চান তা নির্বাচন করুন:
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Switch between Small, Pro, Ultra and Diamond */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-muted/60 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("small")}
-                    className={`py-2 px-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
-                      selectedPlan === "small"
-                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
-                    Small (৳{getPlanPrice("small").toLocaleString("bn-BD")})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("pro")}
-                    className={`py-2 px-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
-                      selectedPlan === "pro"
-                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Zap className="h-3.5 w-3.5 text-blue-500" />
-                    Pro (৳{getPlanPrice("pro").toLocaleString("bn-BD")})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("ultra")}
-                    className={`py-2 px-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
-                      selectedPlan === "ultra"
-                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Sparkles className="h-3.5 w-3.5 text-purple-500" />
-                    Ultra (৳{getPlanPrice("ultra").toLocaleString("bn-BD")})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("diamond")}
-                    className={`py-2 px-2 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
-                      selectedPlan === "diamond"
-                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Crown className="h-3.5 w-3.5 text-cyan-500" />
-                    Diamond (৳{getPlanPrice("diamond").toLocaleString("bn-BD")})
-                  </button>
+                {/* Dynamic switch between plans */}
+                <div className="flex flex-wrap gap-1.5 p-1 bg-muted/60 rounded-lg">
+                  {paidPlans.map((p) => {
+                    const isSelected = selectedPlan === p.code;
+                    return (
+                      <button
+                        key={p.code}
+                        type="button"
+                        onClick={() => setSelectedPlan(p.code)}
+                        className={`py-2 px-2.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 flex-1 min-w-[110px] ${
+                          isSelected
+                            ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {p.code === "diamond" ? (
+                          <Crown className="h-3.5 w-3.5 text-cyan-500 shrink-0" />
+                        ) : p.code === "ultra" ? (
+                          <Sparkles className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                        ) : p.code === "pro" ? (
+                          <Zap className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                        ) : (
+                          <BookOpen className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        )}
+                        <span className="truncate">{p.name}</span>
+                        <span className="font-mono opacity-80">(৳{getPlanPrice(p.code).toLocaleString("bn-BD")})</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Selected Package Details */}
@@ -406,7 +406,7 @@ export function CheckoutView({
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold text-lg text-foreground">{currentPlanInfo.name}</span>
                         <Badge
                           className={
@@ -422,11 +422,14 @@ export function CheckoutView({
                           {currentPlanInfo.badge}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{currentPlanInfo.interval}</p>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                        <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>মেয়াদ: <strong className="text-foreground font-semibold">{currentPlanInfo.duration || "৩০ দিন"}</strong></span>
+                      </div>
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-foreground">৳{currentPlanInfo.price}</span>
-                      <p className="text-[10px] text-muted-foreground">টাকা / মাস</p>
+                      <p className="text-[10px] text-muted-foreground">টাকা / {currentPlanInfo.duration || "মেয়াদ"}</p>
                     </div>
                   </div>
 
@@ -449,6 +452,10 @@ export function CheckoutView({
                   <div className="flex justify-between text-muted-foreground">
                     <span>প্যাকেজ মূল্য (Subtotal):</span>
                     <span>৳{currentPlanInfo.price}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>প্যাকেজের মেয়াদ (Duration):</span>
+                    <span className="font-semibold text-foreground">{currentPlanInfo.duration || "৩০ দিন"}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>অ্যাক্টিভেশন ফি (Activation Fee):</span>

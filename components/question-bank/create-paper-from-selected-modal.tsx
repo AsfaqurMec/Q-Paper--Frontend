@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
 import { apiRequest } from "@/lib/client-api";
 import { toStandardDigits } from "@/lib/utils";
+import { getBengaliClass, getBengaliSubject } from "@/lib/curriculum-bengali";
 import type { BankQuestion, ClassHierarchy, Paper, UserSession } from "@/lib/api-types";
 
 type CreatePaperFromSelectedModalProps = {
@@ -72,7 +73,7 @@ export function CreatePaperFromSelectedModal({
     questions.forEach((q) => {
       if (q.className) counts.set(q.className, (counts.get(q.className) || 0) + 1);
     });
-    let maxClass = "নবম-দশম শ্রেণি (SSC)";
+    let maxClass = hierarchy[0]?.className || "SSC (Class 9-10)";
     let maxCount = 0;
     counts.forEach((cnt, cls) => {
       if (cnt > maxCount) {
@@ -81,7 +82,7 @@ export function CreatePaperFromSelectedModal({
       }
     });
     return maxClass;
-  }, [questions]);
+  }, [questions, hierarchy]);
 
   const derivedSubject = useMemo(() => {
     const counts = new Map<string, number>();
@@ -89,7 +90,7 @@ export function CreatePaperFromSelectedModal({
       const s = q.subject || q.category;
       if (s) counts.set(s, (counts.get(s) || 0) + 1);
     });
-    let maxSubj = "সাধারণ বিজ্ঞান";
+    let maxSubj = hierarchy[0]?.subjects[0]?.name || "Physics";
     let maxCount = 0;
     counts.forEach((cnt, subj) => {
       if (cnt > maxCount) {
@@ -98,7 +99,7 @@ export function CreatePaperFromSelectedModal({
       }
     });
     return maxSubj;
-  }, [questions]);
+  }, [questions, hierarchy]);
 
   // Form State
   const [name, setName] = useState("");
@@ -121,6 +122,12 @@ export function CreatePaperFromSelectedModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState("");
+
+  // Available subjects for the selected class
+  const availableSubjects = useMemo(() => {
+    const cls = hierarchy.find((c) => c.className === className);
+    return cls ? cls.subjects : [];
+  }, [hierarchy, className]);
 
   // Question counts & marks breakdown
   const mcqQuestions = useMemo(
@@ -164,7 +171,7 @@ export function CreatePaperFromSelectedModal({
       setIsSubmitting(false);
       setClassName(derivedClass);
       setSubject(derivedSubject);
-      setName(`${derivedClass} ${derivedSubject} - Model Test`);
+      setName(`${getBengaliClass(derivedClass)} ${getBengaliSubject(derivedSubject)} - মডেল টেস্ট`);
       setDuration(suggestedDuration);
       setCustomMarks(String(calculatedTotalMarks));
 
@@ -431,38 +438,62 @@ export function CreatePaperFromSelectedModal({
                   <label className="text-xs font-semibold text-foreground mb-1 block">
                     শ্রেণি / শিক্ষাস্তর (Class / Level) *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    list="hierarchy-classes"
-                    value={className}
-                    onChange={(e) => setClassName(e.target.value)}
-                    placeholder="e.g. নবম-দশম শ্রেণি (SSC)"
-                    className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
-                  />
-                  <datalist id="hierarchy-classes">
-                    {hierarchy.map((c) => (
-                      <option key={c.className} value={c.className} />
-                    ))}
-                    <option value="নবম-দশম শ্রেণি (SSC)" />
-                    <option value="একাদশ-দ্বাদশ শ্রেণি (HSC)" />
-                    <option value="অষ্টম শ্রেণি (JSC/Class 8)" />
-                    <option value="Class 10" />
-                  </datalist>
+                  {hierarchy.length > 0 ? (
+                    <select
+                      value={className}
+                      onChange={(e) => {
+                        setClassName(e.target.value);
+                        const cls = hierarchy.find((c) => c.className === e.target.value);
+                        if (cls && cls.subjects.length > 0) {
+                          setSubject(cls.subjects[0].name);
+                        }
+                      }}
+                      className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
+                    >
+                      {hierarchy.map((c) => (
+                        <option key={c.className} value={c.className}>
+                          {getBengaliClass(c.className)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={className}
+                      onChange={(e) => setClassName(e.target.value)}
+                      placeholder="e.g. SSC (Class 9-10)"
+                      className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
+                    />
+                  )}
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
                     বিষয় (Subject) *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g. পদার্থবিজ্ঞান"
-                    className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
-                  />
+                  {availableSubjects.length > 0 ? (
+                    <select
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
+                    >
+                      {availableSubjects.map((s) => (
+                        <option key={s.name} value={s.name}>
+                          {getBengaliSubject(s.name)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="e.g. Physics"
+                      className="h-9 w-full rounded-md border bg-background px-3 text-xs font-medium"
+                    />
+                  )}
                 </div>
               </div>
 

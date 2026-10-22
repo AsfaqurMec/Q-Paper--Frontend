@@ -22,6 +22,7 @@ import { DashboardQuickGenerator } from "@/components/dashboard-quick-generator"
 import { PaperActions } from "@/components/paper-actions";
 import { api } from "@/lib/api";
 import { getSessionUser } from "@/lib/auth";
+import { getBengaliClass, getBengaliSubject, toBengaliDigits } from "@/lib/curriculum-bengali";
 
 const FEATURED_SUBJECTS = [
   { name: "উচ্চতর গণিত ১ম পত্র", className: "HSC", chapters: 10, total: "3,800+", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20" },
@@ -178,17 +179,17 @@ export default async function DashboardPage() {
                       {paper.name}
                     </Link>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-semibold">
-                      {paper.className}
+                      {getBengaliClass(paper.className)}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground flex-wrap">
-                    <span className="text-foreground font-medium">{paper.subject}</span>
+                    <span className="text-foreground font-medium">{getBengaliSubject(paper.subject)}</span>
                     <span>·</span>
-                    <span>{paper.questions?.length || 0} টি প্রশ্ন</span>
+                    <span>{toBengaliDigits(paper.questions?.length || 0)} টি প্রশ্ন</span>
                     <span>·</span>
-                    <span>পূর্ণমান: {paper.totalMarks || 100}</span>
+                    <span>পূর্ণমান: {toBengaliDigits(paper.totalMarks || 100)}</span>
                     <span>·</span>
-                    <span>সময়: {paper.duration || "১ ঘণ্টা"}</span>
+                    <span>সময়: {toBengaliDigits(paper.duration || "১ ঘণ্টা")}</span>
                   </div>
                 </div>
 

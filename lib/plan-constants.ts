@@ -6,6 +6,8 @@ export const DEFAULT_PLANS: Plan[] = [
     name: "Free",
     price: 0,
     interval: "month",
+    duration: "লাইফটাইম",
+    durationDays: 0,
     paperLimit: 2,
     questionLimit: 30,
     totalQuestionsLimit: 60,
@@ -15,13 +17,16 @@ export const DEFAULT_PLANS: Plan[] = [
     branding: false,
     randomGenerator: false,
     multipleVersions: false,
-    importQuestion: false
+    importQuestion: false,
+    description: "সফটওয়্যার পরীক্ষা ও ফ্রি ট্রায়াল"
   },
   {
     code: "small",
     name: "Small",
     price: 100,
     interval: "month",
+    duration: "৩০ দিন (১ মাস)",
+    durationDays: 30,
     paperLimit: 100,
     questionLimit: 50,
     totalQuestionsLimit: 3500,
@@ -31,13 +36,16 @@ export const DEFAULT_PLANS: Plan[] = [
     branding: true,
     randomGenerator: true,
     multipleVersions: true,
-    importQuestion: false
+    importQuestion: false,
+    description: "একক শিক্ষক ও টিউটরদের জন্য সেরা"
   },
   {
     code: "pro",
     name: "Pro",
     price: 500,
     interval: "month",
+    duration: "৩০ দিন (১ মাস)",
+    durationDays: 30,
     paperLimit: 2000,
     questionLimit: 200,
     totalQuestionsLimit: 7000,
@@ -47,13 +55,16 @@ export const DEFAULT_PLANS: Plan[] = [
     branding: true,
     randomGenerator: true,
     multipleVersions: true,
-    importQuestion: false
+    importQuestion: false,
+    description: "ব্যক্তিগত শিক্ষক ও মাঝারি কোচিং"
   },
   {
     code: "ultra",
     name: "Ultra",
     price: 1000,
     interval: "month",
+    duration: "৩০ দিন (১ মাস)",
+    durationDays: 30,
     paperLimit: 5000,
     questionLimit: 500,
     totalQuestionsLimit: 15000,
@@ -63,13 +74,16 @@ export const DEFAULT_PLANS: Plan[] = [
     branding: true,
     randomGenerator: true,
     multipleVersions: true,
-    importQuestion: true
+    importQuestion: true,
+    description: "বড় কোচিং ও ওয়ার্ড (.docx) এক্সপোর্ট"
   },
   {
     code: "diamond",
     name: "Diamond",
     price: 3500,
     interval: "month",
+    duration: "৩০ দিন (১ মাস)",
+    durationDays: 30,
     paperLimit: 999999,
     questionLimit: 999999,
     totalQuestionsLimit: 999999,
@@ -79,6 +93,7 @@ export const DEFAULT_PLANS: Plan[] = [
     branding: true,
     randomGenerator: true,
     multipleVersions: true,
-    importQuestion: true
+    importQuestion: true,
+    description: "সম্পূর্ণ আনলিমিটেড পেপার ও প্রশ্ন, সুপার ভিআইপি"
   }
 ];

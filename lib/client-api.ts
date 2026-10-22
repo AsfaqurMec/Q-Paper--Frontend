@@ -100,7 +100,15 @@ export const clientApi = {
     apiRequest<SharedLink>("/api/shared-links", { method: "POST", body: JSON.stringify(data) }),
   deleteSharedLink: (id: string) =>
     apiRequest<{ id: string }>(`/api/shared-links/${id}`, { method: "DELETE" }),
-  adminUpdateUserPlan: (id: string, plan: "free" | "small" | "pro" | "ultra" | "diamond" | "standard") =>
+  adminGetPlans: () =>
+    apiRequest<Plan[]>("/api/admin/plans"),
+  adminCreatePlan: (data: Partial<Plan>) =>
+    apiRequest<Plan>("/api/admin/plans", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdatePlan: (code: string, data: Partial<Plan>) =>
+    apiRequest<Plan>(`/api/admin/plans/${code}`, { method: "PUT", body: JSON.stringify(data) }),
+  adminDeletePlan: (code: string) =>
+    apiRequest<{ deleted: boolean }>(`/api/admin/plans/${code}`, { method: "DELETE" }),
+  adminUpdateUserPlan: (id: string, plan: string) =>
     apiRequest<{ id: string; plan: string }>(`/api/admin/users/${id}/plan`, { method: "PATCH", body: JSON.stringify({ plan }) }),
   adminUpdateUserRole: (id: string, role: "user" | "admin") =>
     apiRequest<{ id: string; role: string }>(`/api/admin/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
@@ -158,7 +166,7 @@ export const clientApi = {
   getPaymentOptions: () =>
     apiRequest<PaymentOption[]>("/api/billing/payment-options"),
   submitCheckout: (data: {
-    planCode: "small" | "pro" | "ultra" | "diamond" | "standard";
+    planCode: string;
     paymentOptionId: string;
     transactionId: string;
     senderNumber?: string;

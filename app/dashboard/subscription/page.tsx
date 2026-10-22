@@ -114,6 +114,21 @@ export default async function SubscriptionPage() {
               </tr>
             </thead>
             <tbody className="divide-y text-muted-foreground">
+              {/* Duration Row */}
+              <tr className="hover:bg-muted/30 transition-colors bg-teal-50/20 dark:bg-teal-950/10">
+                <td className="py-3 px-3 font-bold text-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-teal-600" />
+                    প্যাকেজের মেয়াদ (Plan Duration)
+                  </span>
+                </td>
+                {planList.map((p) => (
+                  <td key={p.code} className="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">
+                    {p.duration || (p.price === 0 ? "লাইফটাইম" : "৩০ দিন")}
+                  </td>
+                ))}
+              </tr>
+
               {/* Paper Limit Row */}
               <tr className="hover:bg-muted/30 transition-colors">
                 <td className="py-3 px-3 font-semibold text-foreground">প্রশ্নপত্র লিমিট (Papers Limit)</td>

@@ -10,6 +10,7 @@ import {
   Crown,
   ChevronLeft,
   ChevronRight,
+  Clock,
   ShieldCheck,
   CheckCircle2
 } from "lucide-react";
@@ -242,26 +243,36 @@ export function SubscriptionPlanSlider({
                         {plan.name}
                       </h3>
                       <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-muted px-2.5 py-0.5 rounded-md">
-                        {plan.interval === "month" ? "মাসিক" : plan.interval}
+                        {plan.duration || (plan.price === 0 ? "লাইফটাইম" : "৩০ দিন")}
                       </span>
                     </div>
 
                     <p className="text-xs text-muted-foreground mt-1 min-h-[32px] leading-relaxed">
-                      {isFree && "সফটওয়্যার পরীক্ষা ও ফ্রি ট্রায়াল"}
-                      {isSmall && "ব্যক্তিগত শিক্ষক ও ছোট ব্যাচের জন্য সেরা"}
-                      {isPro && "মাঝারি কোচিং ও পূর্ণাঙ্গ শিক্ষাপ্রতিষ্ঠান"}
-                      {isUltra && "বড় কোচিং ও ওয়ার্ড (.docx) এক্সপোর্ট"}
-                      {isDiamond && "সম্পূর্ণ আনলিমিটেড পেপার ও প্রশ্ন, ভিআইপি"}
+                      {plan.description || (
+                        <>
+                          {isFree && "সফটওয়্যার পরীক্ষা ও ফ্রি ট্রায়াল"}
+                          {isSmall && "ব্যক্তিগত শিক্ষক ও ছোট ব্যাচের জন্য সেরা"}
+                          {isPro && "মাঝারি কোচিং ও পূর্ণাঙ্গ শিক্ষাপ্রতিষ্ঠান"}
+                          {isUltra && "বড় কোচিং ও ওয়ার্ড (.docx) এক্সপোর্ট"}
+                          {isDiamond && "সম্পূর্ণ আনলিমিটেড পেপার ও প্রশ্ন, ভিআইপি"}
+                        </>
+                      )}
                     </p>
                   </div>
 
-                  {/* Price Block */}
-                  <div className="flex items-baseline gap-1 my-4 pb-4 border-b border-border/60">
-                    <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-                      ৳{formatBnNumber(plan.price)}
-                    </span>
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      / {plan.price === 0 ? "ফ্রি ট্রায়াল" : plan.interval === "month" ? "মাসিক" : "মেয়াদ"}
+                  {/* Price & Duration Block */}
+                  <div className="flex items-center justify-between my-4 pb-4 border-b border-border/60">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                        ৳{formatBnNumber(plan.price)}
+                      </span>
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        / {plan.price === 0 ? "ফ্রি ট্রায়াল" : plan.interval === "month" ? "মাসিক" : "মেয়াদ"}
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                      <Clock className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                      {plan.duration || (plan.price === 0 ? "লাইফটাইম" : "৩০ দিন")}
                     </span>
                   </div>
 
@@ -279,6 +290,13 @@ export function SubscriptionPlanSlider({
                         : "bg-muted/40 border-border/60 text-foreground"
                     }`}
                   >
+                    <div className="flex items-center justify-between text-xs font-black">
+                      <span>প্যাকেজের মেয়াদ:</span>
+                      <span className="font-bold text-foreground">
+                        {plan.duration || (plan.price === 0 ? "লাইফটাইম" : "৩০ দিন")}
+                      </span>
+                    </div>
+
                     <div className="flex items-center justify-between text-xs font-black">
                       <span>মোট প্রশ্নপত্র:</span>
                       <span

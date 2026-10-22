@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
 import { extractChapterNumber, toStandardDigits } from "@/lib/utils";
+import { getBengaliClass, getBengaliSubject, getBengaliChapter, toBengaliDigits } from "@/lib/curriculum-bengali";
 import type { ClassHierarchy, Paper, UserSession } from "@/lib/api-types";
 
 type GeneratePaperDialogProps = {
@@ -304,8 +305,10 @@ export function GeneratePaperDialog({
   // Auto-calculated title
   const computedTitle = useMemo(() => {
     if (customTitle.trim()) return customTitle;
-    const scope = chapter === "all" ? "Full Subject" : chapter.replace(/^Chapter\s+\d+:\s*/i, "");
-    return `${className} ${subject} - ${scope} ${examType}`;
+    const bnClass = getBengaliClass(className);
+    const bnSubj = getBengaliSubject(subject);
+    const scope = chapter === "all" ? "সম্পূর্ণ পাঠ্যক্রম" : getBengaliChapter(chapter);
+    return `${bnClass} ${bnSubj} - ${scope} (${examType})`;
   }, [customTitle, className, subject, chapter, examType]);
 
   // Auto-calculated duration
@@ -520,14 +523,14 @@ export function GeneratePaperDialog({
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                 <div>
-                  <span className="font-medium text-foreground">বিষয়:</span> {className} • {subject}
+                  <span className="font-medium text-foreground">বিষয়:</span> {getBengaliClass(className)} • {getBengaliSubject(subject)}
                 </div>
                 <div>
                   <span className="font-medium text-foreground">সময়:</span> {computedDuration}
                 </div>
                 <div>
                   <span className="font-medium text-foreground">অধ্যায়:</span>{" "}
-                  {chapter === "all" ? "সকল অধ্যায় (Full Subject)" : chapter}
+                  {chapter === "all" ? "সকল অধ্যায় (Full Subject)" : getBengaliChapter(chapter)}
                 </div>
                 <div>
                   <span className="font-medium text-foreground">প্রশ্ন:</span>{" "}
@@ -649,13 +652,13 @@ export function GeneratePaperDialog({
                       {hierarchy.length > 0 ? (
                         hierarchy.map((cls) => (
                           <option key={cls.className} value={cls.className}>
-                            {cls.className} ({cls.totalCount} Qs)
+                            {getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)} টি প্রশ্ন)
                           </option>
                         ))
                       ) : (
                         <>
-                          <option value="SSC (Class 9-10)">SSC (Class 9-10)</option>
-                          <option value="HSC (Class 11-12)">HSC (Class 11-12)</option>
+                          <option value="SSC (Class 9-10)">৯ম-১০ম শ্রেণি (এসএসসি)</option>
+                          <option value="HSC (Class 11-12)">১১শ-১২শ শ্রেণি (এইচএসসি)</option>
                         </>
                       )}
                     </select>
@@ -672,11 +675,11 @@ export function GeneratePaperDialog({
                       {availableSubjects.length > 0 ? (
                         availableSubjects.map((s) => (
                           <option key={s.name} value={s.name}>
-                            {s.name} ({s.totalCount} Qs)
+                            {getBengaliSubject(s.name)} ({toBengaliDigits(s.totalCount)} টি প্রশ্ন)
                           </option>
                         ))
                       ) : (
-                        <option value={subject}>{subject}</option>
+                        <option value={subject}>{getBengaliSubject(subject)}</option>
                       )}
                     </select>
                   </div>
@@ -692,7 +695,7 @@ export function GeneratePaperDialog({
                       <option value="all">🌟 সকল অধ্যায় (Full Subject Test)</option>
                       {availableChapters.map((ch) => (
                         <option key={ch.name} value={ch.name}>
-                          {ch.name} ({ch.mcqCount} MCQ, {ch.cqCount} CQ)
+                          {getBengaliChapter(ch.name)} ({toBengaliDigits(ch.mcqCount)} নৈর্ব্যক্তিক, {toBengaliDigits(ch.cqCount)} সৃজনশীল)
                         </option>
                       ))}
                     </select>

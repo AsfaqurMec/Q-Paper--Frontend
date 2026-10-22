@@ -42,7 +42,8 @@ import { apiRequest, clientApi } from "@/lib/client-api";
 import { useAppModal } from "@/components/modal-provider";
 import { AdminCurriculumView } from "@/components/admin-curriculum-view";
 import { AdminUserManagementView } from "@/components/admin-user-management-view";
-import type { AdminDashboard, AdminPaperItem, AdminUser, ClassHierarchy, PaymentOption, PaymentRequest, QuestionImportResult, SupportTicket } from "@/lib/api-types";
+import { AdminPlansView } from "@/components/admin-plans-view";
+import type { AdminDashboard, AdminPaperItem, AdminUser, ClassHierarchy, PaymentOption, PaymentRequest, Plan, QuestionImportResult, SupportTicket } from "@/lib/api-types";
 
 function extractChapterNumber(name: string): number {
   if (!name) return 9999;
@@ -62,7 +63,8 @@ export function AdminDashboardView({
   initialPapers = [],
   initialHierarchy = [],
   initialRequests = [],
-  initialPaymentOptions = []
+  initialPaymentOptions = [],
+  initialPlans = []
 }: {
   initialStats: AdminDashboard;
   initialUsers: AdminUser[];
@@ -71,15 +73,16 @@ export function AdminDashboardView({
   initialHierarchy?: ClassHierarchy[];
   initialRequests?: PaymentRequest[];
   initialPaymentOptions?: PaymentOption[];
+  initialPlans?: Plan[];
 }) {
   const searchParams = useSearchParams();
   const urlTab = searchParams.get("tab");
   const initialTab =
-    urlTab === "bank" || urlTab === "users" || urlTab === "papers" || urlTab === "curriculum" || urlTab === "tickets" || urlTab === "diagnostics"
+    urlTab === "bank" || urlTab === "users" || urlTab === "papers" || urlTab === "curriculum" || urlTab === "plans" || urlTab === "tickets" || urlTab === "diagnostics"
       ? (urlTab as any)
       : "overview";
 
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "papers" | "bank" | "curriculum" | "tickets" | "diagnostics">(initialTab);
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "papers" | "bank" | "curriculum" | "plans" | "tickets" | "diagnostics">(initialTab);
   const { showAlert, showConfirm } = useAppModal();
 
   // Users state
@@ -622,6 +625,17 @@ export function AdminDashboardView({
           }`}
         >
           <GraduationCap className="h-3.5 w-3.5 text-indigo-500" /> Curriculum
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("plans")}
+          className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 transition-all shrink-0 ${
+            activeTab === "plans"
+              ? "bg-white dark:bg-slate-900 font-bold shadow-2xs text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <BadgeDollarSign className="h-3.5 w-3.5 text-teal-600" /> প্যাকেজ ও প্ল্যান (Plans)
         </button>
         <button
           type="button"
@@ -1504,6 +1518,13 @@ export function AdminDashboardView({
       {/* ======================================================== */}
       {activeTab === "curriculum" && (
         <AdminCurriculumView initialTree={hierarchy} />
+      )}
+
+      {/* ======================================================== */}
+      {/* TAB: PLANS & PACKAGES MANAGEMENT */}
+      {/* ======================================================== */}
+      {activeTab === "plans" && (
+        <AdminPlansView initialPlans={initialPlans} />
       )}
 
       {/* ======================================================== */}

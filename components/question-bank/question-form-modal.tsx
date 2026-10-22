@@ -7,6 +7,7 @@ import { MathRenderer } from "@/components/math-renderer";
 import { ImportImageModal } from "@/components/import-image-modal";
 import { apiRequest } from "@/lib/client-api";
 import { extractChapterNumber, toStandardDigits } from "@/lib/utils";
+import { getBengaliClass, getBengaliSubject, getBengaliChapter } from "@/lib/curriculum-bengali";
 import type { BankQuestion, BankSubQuestion, BankTag, ClassHierarchy } from "@/lib/api-types";
 
 type QuestionFormProps = {
@@ -66,8 +67,8 @@ export function QuestionFormModal({
 
   const [type, setType] = useState<"mcq" | "cq" | "both">("mcq");
   const [nature, setNature] = useState<"theory" | "mathematical">("theory");
-  const [className, setClassName] = useState("নবম-দশম শ্রেণি (SSC)");
-  const [subject, setSubject] = useState("পদার্থবিজ্ঞান");
+  const [className, setClassName] = useState("SSC (Class 9-10)");
+  const [subject, setSubject] = useState("Physics");
   const [chapter, setChapter] = useState("");
   const [isCustomChapter, setIsCustomChapter] = useState(false);
   const [customChapterInput, setCustomChapterInput] = useState("");
@@ -124,8 +125,8 @@ export function QuestionFormModal({
     if (question) {
       setType(question.type || "mcq");
       setNature(question.nature || "theory");
-      setClassName(question.className || "নবম-দশম শ্রেণি (SSC)");
-      setSubject(question.subject || question.category);
+      setClassName(question.className || "SSC (Class 9-10)");
+      setSubject(question.subject || question.category || "Physics");
       setChapter(question.chapter || "");
       setCustomChapterInput(question.chapter || "");
       setIsCustomChapter(false);
@@ -507,10 +508,10 @@ export function QuestionFormModal({
                   >
                     {hierarchy.map((cls) => (
                       <option key={cls.className} value={cls.className}>
-                        {cls.className}
+                        {getBengaliClass(cls.className)}
                       </option>
                     ))}
-                    <option value="__custom__">Custom Class...</option>
+                    <option value="__custom__">+ কাস্টম শ্রেণি (Custom Class)...</option>
                   </select>
                 ) : (
                   <input
@@ -533,7 +534,7 @@ export function QuestionFormModal({
                   >
                     {availableSubjects.map((s) => (
                       <option key={s.name} value={s.name}>
-                        {s.name}
+                        {getBengaliSubject(s.name)}
                       </option>
                     ))}
                   </select>
@@ -557,7 +558,7 @@ export function QuestionFormModal({
                     onClick={() => setIsCustomChapter(!isCustomChapter)}
                     className="text-[10px] text-primary hover:underline"
                   >
-                    {isCustomChapter ? "List" : "Custom"}
+                    {isCustomChapter ? "তালিকা (List)" : "কাস্টম (Custom)"}
                   </button>
                 </div>
                 {isCustomChapter || availableChapters.length === 0 ? (
@@ -582,10 +583,10 @@ export function QuestionFormModal({
                   >
                     {availableChapters.map((ch) => (
                       <option key={ch.name} value={ch.name}>
-                        {ch.name}
+                        {getBengaliChapter(ch.name)}
                       </option>
                     ))}
-                    <option value="__custom__">+ Custom Chapter...</option>
+                    <option value="__custom__">+ কাস্টম অধ্যায় (Custom Chapter)...</option>
                   </select>
                 )}
               </div>

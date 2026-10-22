@@ -45,6 +45,7 @@ import { GeneratePaperDialog } from "./generate-paper-dialog";
 import { AddToPaperModal } from "./add-to-paper-modal";
 import { JsonImportModal } from "./json-import-modal";
 import { CreatePaperFromSelectedModal } from "./create-paper-from-selected-modal";
+import { getBengaliClass, getBengaliSubject, getBengaliChapter, toBengaliDigits } from "@/lib/curriculum-bengali";
 
 const BATCH_SIZE = 30;
 
@@ -645,16 +646,16 @@ export function QuestionBankView({
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               {question.className && (
                 <span className="rounded-md border bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20 px-2 py-0.5 font-semibold text-[11px]">
-                  {question.className}
+                  {getBengaliClass(question.className)}
                 </span>
               )}
               <span className="rounded-md border bg-muted/80 px-2 py-0.5 font-medium text-[11px]">
-                {question.subject || question.category}
+                {getBengaliSubject(question.subject || question.category)}
               </span>
               {question.chapter && (
                 <span className="rounded-md border bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground font-medium flex items-center gap-1">
                   <BookOpen className="h-3 w-3 text-muted-foreground/70" />
-                  <span>{question.chapter}</span>
+                  <span>{getBengaliChapter(question.chapter)}</span>
                 </span>
               )}
               {question.board && (
@@ -1044,10 +1045,10 @@ export function QuestionBankView({
                 }}
                 className="h-9 w-full rounded-md border bg-background px-2.5 text-xs font-medium"
               >
-                <option value="all">All Classes &amp; Levels (সকল শ্রেণি)</option>
+                <option value="all">সকল শ্রেণি (All Classes)</option>
                 {hierarchy.map((cls) => (
                   <option key={cls.className} value={cls.className}>
-                    {cls.className} ({cls.totalCount})
+                    {getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)})
                   </option>
                 ))}
               </select>
@@ -1067,10 +1068,10 @@ export function QuestionBankView({
                 }}
                 className="h-9 w-full rounded-md border bg-background px-2.5 text-xs font-medium"
               >
-                <option value="all">All Subjects (সকল বিষয়)</option>
+                <option value="all">সকল বিষয় (All Subjects)</option>
                 {availableSubjects.map((subj) => (
                   <option key={subj.name} value={subj.name}>
-                    {subj.name} ({subj.totalCount})
+                    {getBengaliSubject(subj.name)} ({toBengaliDigits(subj.totalCount)})
                   </option>
                 ))}
               </select>
@@ -1088,10 +1089,10 @@ export function QuestionBankView({
                 disabled={selectedSubject === "all" && availableChapters.length === 0}
                 className="h-9 w-full rounded-md border bg-background px-2.5 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="all">All Chapters (সকল অধ্যায়)</option>
+                <option value="all">সকল অধ্যায় (All Chapters)</option>
                 {availableChapters.map((ch) => (
                   <option key={ch.name} value={ch.name}>
-                    {ch.name} ({ch.totalCount})
+                    {getBengaliChapter(ch.name)} ({toBengaliDigits(ch.totalCount)})
                   </option>
                 ))}
               </select>
@@ -1378,7 +1379,7 @@ export function QuestionBankView({
               )}
               {selectedChapter !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 font-medium text-primary text-[11px]">
-                  <span>Chapter: {selectedChapter}</span>
+                  <span>অধ্যায়: {getBengaliChapter(selectedChapter)}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedChapter("all")}
@@ -1469,14 +1470,14 @@ export function QuestionBankView({
                             </div>
                             <div>
                               <h4 className="text-xs font-bold text-foreground">
-                                {group.chapterName}
+                                {getBengaliChapter(group.chapterName)}
                               </h4>
                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
-                                <span className="font-semibold text-primary">{group.items.length} questions</span>
+                                <span className="font-semibold text-primary">{toBengaliDigits(group.items.length)} টি প্রশ্ন</span>
                                 <span>&middot;</span>
-                                <span>{group.mcqCount} MCQs</span>
+                                <span>{toBengaliDigits(group.mcqCount)} টি নৈর্ব্যক্তিক</span>
                                 <span>&middot;</span>
-                                <span>{group.cqCount} CQs</span>
+                                <span>{toBengaliDigits(group.cqCount)} টি সৃজনশীল</span>
                               </div>
                             </div>
                           </div>

@@ -13,20 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { clientApi } from "@/lib/client-api";
 
 const SUBJECT_OPTIONS = [
-  { name: "উচ্চতর গণিত ১ম পত্র", className: "HSC (Class 11-12)", chapters: 10 },
-  { name: "উচ্চতর গণিত ২য় পত্র", className: "HSC (Class 11-12)", chapters: 10 },
-  { name: "পদার্থবিজ্ঞান ১ম পত্র", className: "HSC (Class 11-12)", chapters: 10 },
-  { name: "পদার্থবিজ্ঞান ২য় পত্র", className: "HSC (Class 11-12)", chapters: 11 },
-  { name: "রসায়ন ১ম পত্র", className: "HSC (Class 11-12)", chapters: 5 },
-  { name: "রসায়ন ২য় পত্র", className: "HSC (Class 11-12)", chapters: 5 },
-  { name: "জীববিজ্ঞান ১ম পত্র (উদ্ভিদবিজ্ঞান)", className: "HSC (Class 11-12)", chapters: 12 },
-  { name: "জীববিজ্ঞান ২য় পত্র (প্রাণিবিজ্ঞান)", className: "HSC (Class 11-12)", chapters: 12 },
-  { name: "তথ্য ও যোগাযোগ প্রযুক্তি", className: "HSC (Class 11-12)", chapters: 6 },
-  { name: "বাংলা ১ম পত্র", className: "HSC (Class 11-12)", chapters: 20 },
-  { name: "সাধারণ গণিত", className: "SSC (Class 9-10)", chapters: 17 },
-  { name: "উচ্চতর গণিত", className: "SSC (Class 9-10)", chapters: 14 },
-  { name: "পদার্থবিজ্ঞান", className: "SSC (Class 9-10)", chapters: 14 },
-  { name: "রসায়ন", className: "SSC (Class 9-10)", chapters: 12 }
+  { name: "উচ্চতর গণিত ১ম পত্র", englishSubject: "Higher Mathematics 1st Paper", className: "HSC (Class 11-12)", chapters: 10 },
+  { name: "উচ্চতর গণিত ২য় পত্র", englishSubject: "Higher Mathematics 2nd Paper", className: "HSC (Class 11-12)", chapters: 10 },
+  { name: "পদার্থবিজ্ঞান ১ম পত্র", englishSubject: "Physics 1st Paper", className: "HSC (Class 11-12)", chapters: 10 },
+  { name: "পদার্থবিজ্ঞান ২য় পত্র", englishSubject: "Physics 2nd Paper", className: "HSC (Class 11-12)", chapters: 11 },
+  { name: "রসায়ন ১ম পত্র", englishSubject: "Chemistry 1st Paper", className: "HSC (Class 11-12)", chapters: 5 },
+  { name: "রসায়ন ২য় পত্র", englishSubject: "Chemistry 2nd Paper", className: "HSC (Class 11-12)", chapters: 5 },
+  { name: "জীববিজ্ঞান ১ম পত্র (উদ্ভিদবিজ্ঞান)", englishSubject: "Biology 1st Paper (Botany)", className: "HSC (Class 11-12)", chapters: 12 },
+  { name: "জীববিজ্ঞান ২য় পত্র (প্রাণিবিজ্ঞান)", englishSubject: "Biology 2nd Paper (Zoology)", className: "HSC (Class 11-12)", chapters: 12 },
+  { name: "তথ্য ও যোগাযোগ প্রযুক্তি", englishSubject: "ICT", className: "HSC (Class 11-12)", chapters: 6 },
+  { name: "বাংলা ১ম পত্র", englishSubject: "Bangla 1st Paper", className: "HSC (Class 11-12)", chapters: 20 },
+  { name: "সাধারণ গণিত", englishSubject: "General Mathematics", className: "SSC (Class 9-10)", chapters: 17 },
+  { name: "উচ্চতর গণিত", englishSubject: "Higher Mathematics", className: "SSC (Class 9-10)", chapters: 14 },
+  { name: "পদার্থবিজ্ঞান", englishSubject: "Physics", className: "SSC (Class 9-10)", chapters: 14 },
+  { name: "রসায়ন", englishSubject: "Chemistry", className: "SSC (Class 9-10)", chapters: 12 }
 ];
 
 export function DashboardQuickGenerator() {
@@ -55,7 +55,7 @@ export function DashboardQuickGenerator() {
       const created = await clientApi.generatePaper({
         name: paperName,
         className: subjectMeta.className,
-        subject: selectedSubject,
+        subject: subjectMeta.englishSubject || selectedSubject,
         chapter: "all",
         mcqCount: totalCount,
         cqCount: 0,

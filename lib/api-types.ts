@@ -10,7 +10,7 @@ export type UserSession = {
   name?: string;
   email?: string;
   role: "user" | "admin";
-  plan: "free" | "small" | "pro" | "ultra" | "diamond" | "standard";
+  plan: "free" | "small" | "pro" | "ultra" | "diamond" | "standard" | string;
   verified?: boolean;
   phone?: string;
   institute?: string;
@@ -44,10 +44,12 @@ export type DashboardData = {
 };
 
 export type Plan = {
-  code: "free" | "small" | "pro" | "ultra" | "diamond" | "standard";
+  code: string;
   name: string;
   price: number;
-  interval: "lifetime" | "month";
+  interval: "lifetime" | "month" | "year" | "day" | string;
+  duration?: string;
+  durationDays?: number;
   paperLimit: number;
   questionLimit: number;
   totalQuestionsLimit: number;
@@ -58,6 +60,8 @@ export type Plan = {
   branding: boolean;
   randomGenerator: boolean;
   multipleVersions: boolean;
+  description?: string;
+  isActive?: boolean;
 };
 
 export type Paper = {

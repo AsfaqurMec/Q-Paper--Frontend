@@ -3,6 +3,7 @@ import { BadgeCheck, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MathRenderer } from "@/components/math-renderer";
 import { sanitizeSvg } from "@/lib/sanitize";
+import { getBengaliClass, getBengaliSubject } from "@/lib/curriculum-bengali";
 
 export type PreviewQuestion = {
   id: string;
@@ -520,10 +521,10 @@ export function PaperPreview({
                 </div>
                 <h2 className="mt-1.5 text-lg sm:text-xl font-bold">{paper?.name ?? "Model Test Examination"}</h2>
                 <div className="mt-2 flex flex-wrap justify-center gap-2 sm:gap-4 text-xs text-slate-700">
-                  <span>{paper?.className ?? "Class 10"}</span>
-                  <span>{paper?.subject ?? "General"}</span>
-                  <span>{isBangla ? `সময়: ${paper?.duration ?? "২ ঘণ্টা"}` : `Time: ${paper?.duration ?? "2 hours"}`}</span>
-                  <span>{isBangla ? `পূর্ণমান: ${paper?.totalMarks ?? 100}` : `Marks: ${paper?.totalMarks ?? 100}`}</span>
+                  <span>{isBangla ? (paper?.className ? getBengaliClass(paper.className) : "১০ম শ্রেণি") : (paper?.className ?? "Class 10")}</span>
+                  <span>{isBangla ? (paper?.subject ? getBengaliSubject(paper.subject) : "সাধারণ") : (paper?.subject ?? "General")}</span>
+                  <span>{isBangla ? `সময়: ${toBn(paper?.duration ?? "২ ঘণ্টা")}` : `Time: ${paper?.duration ?? "2 hours"}`}</span>
+                  <span>{isBangla ? `পূর্ণমান: ${toBn(paper?.totalMarks ?? 100)}` : `Marks: ${paper?.totalMarks ?? 100}`}</span>
                 </div>
                 {paper?.instructions && <p className="mt-2.5 text-xs text-slate-600">{paper.instructions}</p>}
               </div>

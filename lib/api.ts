@@ -149,8 +149,9 @@ export const api = {
   deleteSharedLink: (id: string) =>
     apiMutate<{ id: string }>(`/api/shared-links/${id}`, "DELETE"),
   adminDashboard: () => apiGet<AdminDashboard>("/api/admin/dashboard"),
+  adminPlans: () => apiGet<Plan[]>("/api/admin/plans"),
   adminUsers: (query?: string) => apiGet<AdminUser[]>(`/api/admin/users${query ? `?${query}` : ""}`),
-  adminUpdateUserPlan: (id: string, plan: "free" | "pro" | "ultra" | "standard") =>
+  adminUpdateUserPlan: (id: string, plan: string) =>
     apiMutate<{ id: string; plan: string }>(`/api/admin/users/${id}/plan`, "PATCH", { plan }),
   adminUpdateUserRole: (id: string, role: "user" | "admin") =>
     apiMutate<{ id: string; role: string }>(`/api/admin/users/${id}/role`, "PATCH", { role }),
