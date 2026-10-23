@@ -55,11 +55,11 @@ export function PaperActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         {userRole === "admin" && (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium">
             <Link href={editorHref as Route}>
-              <Edit3 className="h-4 w-4" />
+              <Edit3 className="h-3.5 w-3.5 mr-1" />
               Edit Questions
             </Link>
           </Button>
@@ -68,20 +68,27 @@ export function PaperActions({
           variant="outline"
           size="sm"
           onClick={() => setExportModal({ open: true, format: "pdf" })}
+          className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium"
         >
-          <FileDown className="h-4 w-4" />
+          <FileDown className="h-3.5 w-3.5 mr-1 text-primary" />
           PDF
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setExportModal({ open: true, format: "docx" })}
+          className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium"
         >
-          <FileDown className="h-4 w-4" />
+          <FileDown className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" />
           DOCX
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setDeleteModalOpen(true)} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20">
-          <Trash2 className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDeleteModalOpen(true)}
+          className="h-7 sm:h-8 px-2 sm:px-2.5 text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+        >
+          <Trash2 className="h-3.5 w-3.5 mr-1" />
           Delete
         </Button>
       </div>
@@ -108,7 +115,7 @@ export function PaperActions({
         defaultFormat={exportModal.format}
         activeSet={activeSet}
         userPlan={userPlan}
-        hasBoth={questionType === "both" || !questionType}
+        hasBoth={true}
       />
     </>
   );

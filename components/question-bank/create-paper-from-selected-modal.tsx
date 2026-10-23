@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,6 +58,10 @@ export function CreatePaperFromSelectedModal({
   onSuccess
 }: CreatePaperFromSelectedModalProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Selected questions that can be pruned before creation
   const [questions, setQuestions] = useState<BankQuestion[]>(initialQuestions);
@@ -186,7 +191,7 @@ export function CreatePaperFromSelectedModal({
     }
   }, [open, derivedClass, derivedSubject, suggestedDuration, calculatedTotalMarks, mcqQuestions.length, cqQuestions.length]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   function removeQuestion(id: string) {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
@@ -252,8 +257,8 @@ export function CreatePaperFromSelectedModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 sm:p-5 backdrop-blur-md overflow-hidden animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-5 backdrop-blur-md overflow-hidden animate-in fade-in duration-200 w-screen h-screen min-h-[100dvh]">
       <div className="relative w-full max-w-3xl xl:max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Header */}
@@ -815,6 +820,7 @@ export function CreatePaperFromSelectedModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

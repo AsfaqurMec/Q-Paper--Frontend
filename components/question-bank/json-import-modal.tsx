@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CheckCircle2,
@@ -49,6 +50,11 @@ export function JsonImportModal({
   initialSubject,
   initialChapter
 }: JsonImportModalProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [hierarchy, setHierarchy] = useState<ClassHierarchy[]>(propHierarchy || []);
   const [selectedClass, setSelectedClass] = useState<string>(initialClass || "");
   const [selectedSubject, setSelectedSubject] = useState<string>(initialSubject || "");
@@ -151,7 +157,7 @@ export function JsonImportModal({
     }
   }
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   function loadSampleMcq() {
     const sample = [
@@ -273,8 +279,8 @@ export function JsonImportModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-md overflow-y-auto w-screen h-screen min-h-[100dvh]">
       <div className="relative w-full max-w-3xl rounded-xl border bg-card p-4 sm:p-6 shadow-2xl my-auto max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between border-b pb-3 shrink-0">
@@ -559,6 +565,7 @@ export function JsonImportModal({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

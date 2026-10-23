@@ -14,6 +14,8 @@ export type UserSession = {
   verified?: boolean;
   phone?: string;
   institute?: string;
+  instituteLogo?: string;
+  instituteBranding?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };

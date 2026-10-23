@@ -100,8 +100,13 @@ export const clientApi = {
     apiRequest<Plan[]>("/api/plans"),
   getProfile: () =>
     apiRequest<UserSession>("/api/auth/profile"),
-  updateProfile: (data: { name?: string; phone?: string; institute?: string }) =>
-    apiRequest<UserSession>("/api/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
+  updateProfile: (data: {
+    name?: string;
+    phone?: string;
+    institute?: string;
+    instituteLogo?: string;
+    instituteBranding?: boolean;
+  }) => apiRequest<UserSession>("/api/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     apiRequest<UserSession>("/api/auth/change-password", { method: "POST", body: JSON.stringify(data) }),
   getTickets: () =>

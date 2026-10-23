@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
 import {
   AlertCircle,
   Check,
@@ -12,7 +14,9 @@ import {
   FileText,
   Layers,
   Loader2,
+  Lock,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
   X
 } from "lucide-react";
@@ -36,12 +40,12 @@ export type ExportPaperModalProps = {
 };
 
 const SET_OPTIONS = [
-  { key: "", label: "মূল প্রশ্ন", subLabel: "Original", description: "সেট ছাড়া মূল প্রশ্নপত্র" },
-  { key: "all", label: "সকল ৪টি সেট", subLabel: "All 4 Sets", badge: "ক, খ, গ, ঘ", description: "৪টি ভিন্ন সেটের প্রশ্ন" },
-  { key: "A", label: "সেট ক", subLabel: "Set A", description: "ক-সেট প্রশ্ন" },
-  { key: "B", label: "সেট খ", subLabel: "Set B", description: "খ-সেট (শাফেল্ড)" },
-  { key: "C", label: "সেট গ", subLabel: "Set C", description: "গ-সেট (শাফেল্ড)" },
-  { key: "D", label: "সেট ঘ", subLabel: "Set D", description: "ঘ-সেট (শাফেল্ড)" }
+  { key: "", label: "মূল প্রশ্ন", subLabel: "Original", description: "সেট ছাড়া মূল প্রশ্নপত্র", requiresPaid: false },
+  { key: "all", label: "সকল ৪টি সেট", subLabel: "All 4 Sets", badge: "ক, খ, গ, ঘ", description: "৪টি ভিন্ন সেটের প্রশ্ন", requiresPaid: true },
+  { key: "A", label: "সেট ক", subLabel: "Set A", description: "ক-সেট প্রশ্ন", requiresPaid: true },
+  { key: "B", label: "সেট খ", subLabel: "Set B", description: "খ-সেট (শাফেল্ড)", requiresPaid: true },
+  { key: "C", label: "সেট গ", subLabel: "Set C", description: "গ-সেট (শাফেল্ড)", requiresPaid: true },
+  { key: "D", label: "সেট ঘ", subLabel: "Set D", description: "ঘ-সেট (শাফেল্ড)", requiresPaid: true }
 ];
 
 export function ExportPaperModal({
@@ -60,6 +64,11 @@ export function ExportPaperModal({
   defaultSectionFlow = "separate"
 }: ExportPaperModalProps) {
   const [format, setFormat] = useState<"pdf" | "docx">(defaultFormat);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [withAnswer, setWithAnswer] = useState<boolean>(defaultWithAnswer);
   const [selectedSet, setSelectedSet] = useState<string>(activeSet || "");
   const [allSetsMode, setAllSetsMode] = useState<"combined" | "separate">("combined");
@@ -69,12 +78,17 @@ export function ExportPaperModal({
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const planStr = String(userPlan || "free");
+  const canUseSets = planStr !== "free";
+  const isUltra = planStr === "ultra" || planStr === "diamond" || planStr === "admin";
+  const isFreePlan = planStr === "free";
+
   // Synchronize state when modal opens
   useEffect(() => {
     if (open) {
-      setFormat(defaultFormat);
+      setFormat(defaultFormat === "docx" && !isUltra ? "pdf" : defaultFormat);
       setWithAnswer(defaultWithAnswer);
-      setSelectedSet(activeSet || "");
+      setSelectedSet(canUseSets ? (activeSet || "") : "");
       setAllSetsMode("combined");
       setSectionFlow(defaultSectionFlow || "separate");
       setError(null);
@@ -85,11 +99,9 @@ export function ExportPaperModal({
       // Proactively warm up backend (Render cold-start mitigation)
       fetch("/api/backend/health").catch(() => {});
     }
-  }, [open, defaultFormat, defaultWithAnswer, activeSet, defaultSectionFlow]);
+  }, [open, defaultFormat, defaultWithAnswer, activeSet, defaultSectionFlow, canUseSets, isUltra]);
 
-  if (!open) return null;
-
-  const isUltra = userPlan === "ultra" || userPlan === "diamond" || userPlan === "admin";
+  if (!open || !mounted) return null;
 
   async function triggerSingleDownload(
     formatType: "pdf" | "docx",
@@ -100,9 +112,7 @@ export function ExportPaperModal({
   ) {
     const params = new URLSearchParams();
     params.set("withAnswer", withAnswer ? "true" : "false");
-    if (hasBoth !== false) {
-      params.set("sectionFlow", sectionFlow);
-    }
+    params.set("sectionFlow", sectionFlow);
     if (isAll) {
       params.set("set", "all");
     } else if (setKey) {
@@ -234,8 +244,12 @@ export function ExportPaperModal({
 
   async function handleDownload() {
     setError(null);
+    if (selectedSet && !canUseSets) {
+      setError("৪টি সেট (ক, খ, গ, ঘ) ও সকল সেট এক্সপোর্ট করার সুবিধা Small, Pro, Ultra ও Diamond প্যাকেজে উপলব্ধ। অনুগ্রহ করে প্যাকেজ আপগ্রেড করুন।");
+      return;
+    }
     if (format === "docx" && !isUltra) {
-      setError("DOCX export is only available in the Ultra and Diamond packages. Please select PDF or upgrade your plan.");
+      setError("MS Word (.docx) এক্সপোর্ট সুবিধা শুধুমাত্র Ultra এবং Diamond প্যাকেজের ব্যবহারকারীদের জন্য সংরক্ষিত। দয়া করে প্যাকেজ আপগ্রেড করুন বা PDF ফরম্যাটে ডাউনলোড করুন।");
       return;
     }
 
@@ -297,8 +311,8 @@ export function ExportPaperModal({
     buttonLabel = `Download Set ${selectedSet} (${format.toUpperCase()})`;
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto w-screen h-screen min-h-[100dvh]">
       <div className="w-full max-w-xl rounded-xl border bg-card p-4 sm:p-6 shadow-2xl my-auto max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b pb-3 sm:pb-4">
@@ -332,17 +346,28 @@ export function ExportPaperModal({
               <p className="font-semibold">এক্সপোর্ট ত্রুটি (Export Failed)</p>
               <p className="mt-0.5">{error}</p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="h-7 text-xs border-destructive/30 hover:bg-destructive/20 text-destructive shrink-0"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              আবার চেষ্টা করুন
-            </Button>
+            {error.includes("আপগ্রেড") || error.includes("upgrade") ? (
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 shrink-0 font-semibold"
+              >
+                <Link href="/dashboard/subscription">আপগ্রেড করুন</Link>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="h-7 text-xs border-destructive/30 hover:bg-destructive/20 text-destructive shrink-0"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                আবার চেষ্টা করুন
+              </Button>
+            )}
           </div>
         )}
 
@@ -363,23 +388,40 @@ export function ExportPaperModal({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {SET_OPTIONS.map((opt) => {
                 const isSelected = selectedSet === opt.key;
+                const isLocked = opt.requiresPaid && !canUseSets;
                 return (
                   <button
                     key={opt.key || "original"}
                     type="button"
-                    onClick={() => setSelectedSet(opt.key)}
+                    onClick={() => {
+                      if (isLocked) {
+                        setError("৪টি সেট (ক, খ, গ, ঘ) শাফলার ও সকল সেট এক্সপোর্ট করার সুবিধা Small, Pro, Ultra ও Diamond প্যাকেজে উপলব্ধ। অনুগ্রহ করে আপনার প্যাকেজ আপগ্রেড করুন।");
+                        return;
+                      }
+                      setError(null);
+                      setSelectedSet(opt.key);
+                    }}
                     className={`flex flex-col items-start p-2.5 rounded-lg border text-left transition-all relative ${
-                      isSelected
+                      isLocked
+                        ? "border-dashed border-border bg-muted/30 opacity-75 hover:opacity-100 hover:border-amber-300"
+                        : isSelected
                         ? "border-teal-500 bg-teal-50/50 dark:bg-teal-950/30 ring-2 ring-teal-500/20 shadow-xs"
                         : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/40"
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-bold text-foreground">
-                        {opt.label}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-foreground">
+                          {opt.label}
+                        </span>
+                        {isLocked && <Lock className="h-3 w-3 text-amber-500 shrink-0" />}
+                      </div>
                       {isSelected ? (
                         <Check className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                      ) : isLocked ? (
+                        <span className="text-[9px] font-extrabold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-1 py-0.2 rounded uppercase">
+                          Pro
+                        </span>
                       ) : opt.badge ? (
                         <span className="text-[10px] font-bold text-teal-700 dark:text-teal-400 bg-teal-100/70 dark:bg-teal-900/40 px-1 rounded">
                           {opt.badge}
@@ -387,7 +429,7 @@ export function ExportPaperModal({
                       ) : null}
                     </div>
                     <span className="text-[10px] text-muted-foreground mt-0.5 truncate w-full">
-                      {opt.description}
+                      {isLocked ? "প্যাকেজ আপগ্রেড প্রয়োজন" : opt.description}
                     </span>
                   </button>
                 );
@@ -447,60 +489,58 @@ export function ExportPaperModal({
           </div>
 
           {/* MCQ & CQ Page Layout Option (আলাদা পেজে বনাম একই পেজে) */}
-          {hasBoth !== false && (
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                MCQ ও CQ পেজ লেআউট (Page Layout)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Separate Pages */}
-                <button
-                  type="button"
-                  onClick={() => setSectionFlow("separate")}
-                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
-                    sectionFlow === "separate"
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
-                      : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <div className="flex items-center gap-2">
-                      <Layers className={`h-4 w-4 ${sectionFlow === "separate" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className="text-sm font-semibold text-foreground">আলাদা পেজে (Separate)</span>
-                    </div>
-                    {sectionFlow === "separate" && <Check className="h-4 w-4 text-primary" />}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              MCQ ও CQ পেজ লেআউট (Page Layout)
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Separate Pages */}
+              <button
+                type="button"
+                onClick={() => setSectionFlow("separate")}
+                className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  sectionFlow === "separate"
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
+                    : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-2">
+                    <Layers className={`h-4 w-4 ${sectionFlow === "separate" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-sm font-semibold text-foreground">আলাদা পেজে (Separate)</span>
                   </div>
-                  <p className="text-[11px] font-medium text-primary/80">নতুন পেজ থেকে CQ শুরু হবে</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    MCQ শেষ হলে CQ নতুন পেজ থেকে হেডিংসহ শুরু হবে (প্রথাগত লেআউট)।
-                  </p>
-                </button>
+                  {sectionFlow === "separate" && <Check className="h-4 w-4 text-primary" />}
+                </div>
+                <p className="text-[11px] font-medium text-primary/80">নতুন পেজ থেকে CQ শুরু হবে</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  MCQ শেষ হলে CQ নতুন পেজ থেকে হেডিংসহ শুরু হবে (প্রথাগত লেআউট)।
+                </p>
+              </button>
 
-                {/* Single Page */}
-                <button
-                  type="button"
-                  onClick={() => setSectionFlow("single")}
-                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
-                    sectionFlow === "single"
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
-                      : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <div className="flex items-center gap-2">
-                      <FileText className={`h-4 w-4 ${sectionFlow === "single" ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className="text-sm font-semibold text-foreground">একই পেজে (Single Page)</span>
-                    </div>
-                    {sectionFlow === "single" && <Check className="h-4 w-4 text-primary" />}
+              {/* Single Page */}
+              <button
+                type="button"
+                onClick={() => setSectionFlow("single")}
+                className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  sectionFlow === "single"
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
+                    : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-2">
+                    <FileText className={`h-4 w-4 ${sectionFlow === "single" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-sm font-semibold text-foreground">একই পেজে (Single Page)</span>
                   </div>
-                  <p className="text-[11px] font-medium text-primary/80">জায়গা থাকলে একসাথে (হেডিং ছাড়া)</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    MCQ এর পর ফাঁকা জায়গা থাকলে সরাসরি CQ যুক্ত হবে, কোনো CQ হেডিং থাকবে না।
-                  </p>
-                </button>
-              </div>
+                  {sectionFlow === "single" && <Check className="h-4 w-4 text-primary" />}
+                </div>
+                <p className="text-[11px] font-medium text-primary/80">জায়গা থাকলে একসাথে (হেডিং ছাড়া)</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  MCQ এর পর ফাঁকা জায়গা থাকলে সরাসরি CQ যুক্ত হবে, কোনো CQ হেডিং থাকবে না।
+                </p>
+              </button>
             </div>
-          )}
+          </div>
 
           {/* Answer Option Selector: With Answer vs Without Answer */}
           <div>
@@ -583,9 +623,18 @@ export function ExportPaperModal({
 
               <button
                 type="button"
-                onClick={() => setFormat("docx")}
+                onClick={() => {
+                  if (!isUltra) {
+                    setError("MS Word (.docx) এক্সপোর্ট সুবিধা শুধুমাত্র Ultra এবং Diamond প্যাকেজের ব্যবহারকারীদের জন্য সংরক্ষিত। দয়া করে প্যাকেজ আপগ্রেড করুন বা PDF ফরম্যাটে ডাউনলোড করুন।");
+                    return;
+                  }
+                  setError(null);
+                  setFormat("docx");
+                }}
                 className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                  format === "docx"
+                  !isUltra
+                    ? "border-dashed border-border bg-muted/20 opacity-80 hover:opacity-100 hover:border-amber-300"
+                    : format === "docx"
                     ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
                     : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
                 }`}
@@ -595,16 +644,56 @@ export function ExportPaperModal({
                   <div className="text-left">
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-semibold">Word (.docx)</p>
+                      {!isUltra && <Lock className="h-3 w-3 text-amber-500" />}
                       <span className="rounded bg-amber-500/10 px-1 py-0.2 text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase">
                         Ultra / Diamond
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">Editable in MS Word</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {!isUltra ? "প্যাকেজ আপগ্রেড প্রয়োজন" : "Editable in MS Word"}
+                    </p>
                   </div>
                 </div>
                 {format === "docx" && <Check className="h-4 w-4 text-primary" />}
               </button>
             </div>
+          </div>
+
+          {/* Watermark Status Notice */}
+          <div
+            className={`p-3 rounded-lg border text-xs flex items-start justify-between gap-3 ${
+              isFreePlan
+                ? "border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200"
+                : "border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/60 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-200"
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              {isFreePlan ? (
+                <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              ) : (
+                <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className="font-bold text-xs">
+                  {isFreePlan ? "ফ্রি ওয়াটারমার্ক অন্তর্ভুক্ত (Free Plan Watermark)" : "১০০% ওয়াটারমার্ক-মুক্ত (Watermark-Free)"}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  {isFreePlan
+                    ? "ডকুমেন্টের প্রতিটি পেজের নিচে বাম পাশে ExamCraft লোগো ও নাম এবং ডান পাশে www.examcraft.app ওয়াটারমার্ক হিসেবে প্রিন্ট হবে।"
+                    : "আপনার বর্তমান প্যাকেজে কোনো ওয়াটারমার্ক ছাড়া সম্পূর্ণ ক্লিন প্রফেশনাল প্রশ্নপত্র ডাউনলোড হবে।"}
+                </p>
+              </div>
+            </div>
+            {isFreePlan && (
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="border-amber-500/40 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 h-7 text-[11px] shrink-0 font-semibold"
+              >
+                <Link href="/dashboard/subscription">রিমুভ করুন</Link>
+              </Button>
+            )}
           </div>
 
           {/* Dedicated Percentage Loader Card */}
@@ -710,6 +799,7 @@ export function ExportPaperModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

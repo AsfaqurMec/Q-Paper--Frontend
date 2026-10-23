@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Settings2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
@@ -15,6 +16,10 @@ type EditPaperDetailsModalProps = {
 };
 
 export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPaperDetailsModalProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [formData, setFormData] = useState({
     name: paper.name || "",
     subject: paper.subject || "",
@@ -56,7 +61,7 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
     }
   }, [open, paper]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -100,8 +105,8 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-md overflow-y-auto w-screen h-screen min-h-[100dvh]">
       <div className="relative w-full max-w-xl rounded-xl border bg-card p-4 sm:p-6 shadow-soft my-auto max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b pb-3 sm:pb-4">
           <div className="flex items-center gap-2 sm:gap-2.5">
@@ -335,6 +340,7 @@ export function EditPaperDetailsModal({ open, paper, onClose, onSaved }: EditPap
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -37,7 +37,7 @@ import logosmall from "../public/logo-small.png";
 
 const nav: Array<{ href: Route; label: string; icon: typeof LayoutDashboard; badge?: string }> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/papers/new", label: "Create Paper", icon: FilePlus2 },
+  { href: "/dashboard/question-bank", label: "Create Paper", icon: FilePlus2 },
   { href: "/dashboard/my-questions", label: "My Questions", icon: ListChecks },
   { href: "/dashboard/question-bank", label: "Question Bank", icon: BookOpenCheck },
   { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
@@ -279,7 +279,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
               <span>Priority Support</span>
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground leading-normal">
-              ৭২,২২৬+ প্রশ্ন ব্যাংক ও ওএমআর ৪-সেট প্রশ্ন সহায়তা প্রস্তুত।
+              ৩,৫০০+ প্রশ্ন ব্যাংক ও ওএমআর ৪-সেট প্রশ্ন সহায়তা প্রস্তুত।
             </p>
           </div>
         </div>
@@ -289,7 +289,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
       {/* MAIN WRAPPER & RESPONSIVE HEADER                          */}
       {/* ======================================================== */}
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
-        <header className="shrink-0 z-20 flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-3 border-b border-border bg-background px-2.5 sm:px-4 md:px-6">
+        <header className="shrink-0 relative z-10 flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-3 border-b border-border bg-background px-2.5 sm:px-4 md:px-6">
           {/* Left section: Hamburger Button + Mobile Brand */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
@@ -360,7 +360,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
         </header>
 
         {/* Main Content: ONLY this container scrolls */}
-        <main id="app-main-content" className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-2.5 sm:px-4 md:px-6 py-4 sm:py-6">
+        <main id="app-main-content" className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-2.5 sm:px-4 md:px-6 py-4 sm:py-6">
           {children}
         </main>
       </div>

@@ -12,6 +12,7 @@ import {
   GripVertical,
   ImagePlus,
   Layers,
+  Lock,
   Globe,
   Pencil,
   Plus,
@@ -123,6 +124,7 @@ export function QuestionEditor({
   userPlan?: string;
 }) {
   const isAdmin = userRole === "admin";
+  const canUseSets = isAdmin || userPlan !== "free";
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMounted = useRef(false);
 
@@ -640,6 +642,16 @@ export function QuestionEditor({
   }
 
   function handleSelectPreviewSet(sKey: "A" | "B" | "C" | "D") {
+    if (!canUseSets) {
+      setModal({
+        open: true,
+        type: "error",
+        title: "প্যাকেজ আপগ্রেড প্রয়োজন (Upgrade Required)",
+        message: "৪টি সেট (ক, খ, গ, ঘ) শাফলার ও OMR শিট সুবিধা Small, Pro, Ultra ও Diamond প্যাকেজে উপলব্ধ। আপনার ফ্রি প্যাকেজ আপগ্রেড করতে সাবস্ক্রিপশন পেইজে যান।"
+      });
+      return;
+    }
+
     const mcqs = questions.filter((q) => (q.type || "mcq") === "mcq");
     const cqs = questions.filter((q) => q.type === "cq");
     const isBangla =
@@ -788,26 +800,41 @@ export function QuestionEditor({
                       key={sKey}
                       type="button"
                       onClick={() => handleSelectPreviewSet(sKey)}
-                      className={`rounded px-2 py-0.5 text-xs font-semibold transition-colors ${
+                      className={`rounded px-2 py-0.5 text-xs font-semibold transition-colors flex items-center gap-1 ${
                         isSelected
                           ? "bg-teal-600 text-white shadow-2xs font-bold"
+                          : !canUseSets
+                          ? "text-muted-foreground/70 hover:text-foreground hover:bg-muted/30"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
-                      title={`Switch preview to Set ${sKey} (${banglaMap[sKey]})`}
+                      title={!canUseSets ? "Requires paid plan" : `Switch preview to Set ${sKey} (${banglaMap[sKey]})`}
                     >
-                      {label}
+                      <span>{label}</span>
+                      {!canUseSets && <Lock className="h-2.5 w-2.5 text-amber-500" />}
                     </button>
                   );
                 })}
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setSetModalOpen(true)}
-                  className="h-6 px-1.5 text-xs text-teal-700 hover:text-teal-900 ml-0.5"
+                  onClick={() => {
+                    if (!canUseSets) {
+                      setModal({
+                        open: true,
+                        type: "error",
+                        title: "প্যাকেজ আপগ্রেড প্রয়োজন (Upgrade Required)",
+                        message: "৪টি সেট (ক, খ, গ, ঘ) শাফলার ও OMR শিট সুবিধা Small, Pro, Ultra ও Diamond প্যাকেজে উপলব্ধ। আপনার ফ্রি প্যাকেজ আপগ্রেড করতে সাবস্ক্রিপশন পেইজে যান।"
+                      });
+                      return;
+                    }
+                    setSetModalOpen(true);
+                  }}
+                  className="h-6 px-1.5 text-xs text-teal-700 hover:text-teal-900 ml-0.5 flex items-center gap-1"
                   title="Open Set Manager, OMR Answer Key & Batch Export"
                 >
-                  <Layers className="h-3.5 w-3.5 mr-1" />
+                  <Layers className="h-3.5 w-3.5" />
                   <span className="hidden md:inline">Matrix & Exports</span>
+                  {!canUseSets && <Lock className="h-2.5 w-2.5 text-amber-500" />}
                 </Button>
               </div>
 
@@ -1125,26 +1152,41 @@ export function QuestionEditor({
                     key={sKey}
                     type="button"
                     onClick={() => handleSelectPreviewSet(sKey)}
-                    className={`rounded px-2 py-0.5 text-xs font-semibold transition-colors ${
+                    className={`rounded px-2 py-0.5 text-xs font-semibold transition-colors flex items-center gap-1 ${
                       isSelected
                         ? "bg-teal-600 text-white shadow-2xs font-bold"
+                        : !canUseSets
+                        ? "text-muted-foreground/70 hover:text-foreground hover:bg-muted/30"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
-                    title={`Switch preview to Set ${sKey} (${banglaMap[sKey]})`}
+                    title={!canUseSets ? "Requires paid plan" : `Switch preview to Set ${sKey} (${banglaMap[sKey]})`}
                   >
-                    {label}
+                    <span>{label}</span>
+                    {!canUseSets && <Lock className="h-2.5 w-2.5 text-amber-500" />}
                   </button>
                 );
               })}
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setSetModalOpen(true)}
-                className="h-6 px-1.5 text-xs text-teal-700 hover:text-teal-900 ml-0.5"
+                onClick={() => {
+                  if (!canUseSets) {
+                    setModal({
+                      open: true,
+                      type: "error",
+                      title: "প্যাকেজ আপগ্রেড প্রয়োজন (Upgrade Required)",
+                      message: "৪টি সেট (ক, খ, গ, ঘ) শাফলার ও OMR শিট সুবিধা Small, Pro, Ultra ও Diamond প্যাকেজে উপলব্ধ। আপনার ফ্রি প্যাকেজ আপগ্রেড করতে সাবস্ক্রিপশন পেইজে যান।"
+                    });
+                    return;
+                  }
+                  setSetModalOpen(true);
+                }}
+                className="h-6 px-1.5 text-xs text-teal-700 hover:text-teal-900 ml-0.5 flex items-center gap-1"
                 title="Open Set Manager, OMR Answer Key & Batch Export"
               >
-                <Layers className="h-3.5 w-3.5 mr-1" />
+                <Layers className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Matrix & Exports</span>
+                {!canUseSets && <Lock className="h-2.5 w-2.5 text-amber-500" />}
               </Button>
             </div>
             <div className="flex items-center gap-1 border-l pl-2">
@@ -1831,7 +1873,7 @@ export function QuestionEditor({
         defaultFormat={exportModal.format}
         activeSet={activePreviewSet || currentPaper.setName}
         userPlan={userPlan}
-        hasBoth={questions.some((q) => (q.type || "mcq") === "mcq") && questions.some((q) => q.type === "cq")}
+        hasBoth={true}
         defaultSectionFlow={currentPaper.sectionFlow || "separate"}
         onSaveBeforeExport={async () => {
           await saveAll({ silent: true });

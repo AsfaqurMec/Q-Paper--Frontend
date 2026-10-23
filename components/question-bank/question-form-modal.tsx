@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, BookOpen, Check, Globe, ImagePlus, Layers, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
@@ -64,6 +65,11 @@ export function QuestionFormModal({
   onSaved
 }: QuestionFormProps) {
   const isEditing = Boolean(question);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [type, setType] = useState<"mcq" | "cq" | "both">("mcq");
   const [nature, setNature] = useState<"theory" | "mathematical">("theory");
@@ -190,7 +196,7 @@ export function QuestionFormModal({
     setShowPreview(false);
   }, [question, categories, hierarchy, open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   function handleClassChange(newClass: string) {
     setClassName(newClass);
@@ -405,9 +411,9 @@ export function QuestionFormModal({
     }
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-2 sm:p-4 md:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-2 sm:p-4 md:p-6 w-screen h-screen min-h-[100dvh]"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -1090,6 +1096,7 @@ export function QuestionFormModal({
         questionTitle={title}
         subjectContext={subject}
       />
-    </div>
+    </div>,
+    document.body
   );
 }

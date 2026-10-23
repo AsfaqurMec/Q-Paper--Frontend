@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AlertTriangle, BookOpen, Check, ExternalLink, FileQuestion, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,11 @@ type AddToPaperModalProps = {
 };
 
 export function AddToPaperModal({ open, questionIds, onClose, onSuccess }: AddToPaperModalProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [papers, setPapers] = useState<Paper[]>([]);
   const [selectedPaperId, setSelectedPaperId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -37,7 +43,7 @@ export function AddToPaperModal({ open, questionIds, onClose, onSuccess }: AddTo
     }
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   async function handleAdd() {
     if (!selectedPaperId) {
@@ -66,8 +72,8 @@ export function AddToPaperModal({ open, questionIds, onClose, onSuccess }: AddTo
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-md overflow-y-auto w-screen h-screen min-h-[100dvh]">
       <div className="relative my-auto max-h-[92vh] overflow-y-auto custom-scrollbar w-full max-w-md rounded-xl border bg-card p-4 sm:p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b pb-3 sm:pb-4">
           <div>
@@ -125,7 +131,7 @@ export function AddToPaperModal({ open, questionIds, onClose, onSuccess }: AddTo
             <p className="text-sm font-medium">No saved papers found</p>
             <p className="text-xs text-muted-foreground">Create a paper first, then import questions into it.</p>
             <Button asChild className="w-full">
-              <Link href="/dashboard/papers/new">
+              <Link href="/dashboard/question-bank">
                 <Plus className="h-4 w-4" /> Create New Paper
               </Link>
             </Button>
@@ -176,6 +182,7 @@ export function AddToPaperModal({ open, questionIds, onClose, onSuccess }: AddTo
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -16,6 +16,7 @@ import {
   Eye,
   EyeOff,
   FileText,
+  Image as ImageIcon,
   Infinity as InfinityIcon,
   KeyRound,
   Layers,
@@ -27,6 +28,8 @@ import {
   Shield,
   ShieldCheck,
   Sparkles,
+  Trash2,
+  Upload,
   User,
   X,
   Zap
@@ -34,7 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { clientApi } from "@/lib/client-api";
+import { apiRequest, clientApi } from "@/lib/client-api";
 import { formatBnNumber } from "@/lib/utils";
 import { DEFAULT_PLANS } from "@/lib/plan-constants";
 import { SubscriptionPlanSlider } from "@/components/subscription/subscription-plan-slider";
@@ -82,6 +85,16 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
   const planList = Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS;
   const activePlanCode = user.plan || "free";
   const currentPlan = planList.find((p) => p.code === activePlanCode) || planList[0];
+  const canUseBranding = user.role === "admin" || !!currentPlan.branding;
+
+  // Institute Branding State
+  const [brandingEnabled, setBrandingEnabled] = useState(user.instituteBranding ?? false);
+  const [brandingInstitute, setBrandingInstitute] = useState(user.institute || "");
+  const [brandingLogo, setBrandingLogo] = useState(user.instituteLogo || "");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [brandingSaving, setBrandingSaving] = useState(false);
+  const [brandingSuccess, setBrandingSuccess] = useState<string | null>(null);
+  const [brandingError, setBrandingError] = useState<string | null>(null);
 
   const pendingRequest = myRequests.find((r) => r.status === "pending");
 
@@ -98,6 +111,90 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
 
   const questionsPerPaperLimit = currentPlan.questionLimit || 30;
   const isUnlimitedPerPaper = questionsPerPaperLimit >= 999999;
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setBrandingError("লোগো ফাইলের আকার সর্বোচ্চ ২ MB হতে পারবে (Max 2MB).");
+      return;
+    }
+
+    try {
+      setIsUploadingLogo(true);
+      setBrandingError(null);
+
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read image file"));
+        reader.readAsDataURL(file);
+      });
+
+      try {
+        const uploadRes = await apiRequest<{ imageUrl: string }>("/api/uploads/image", {
+          method: "POST",
+          body: JSON.stringify({ folder: "logos", fileName: file.name, imageData: dataUrl })
+        });
+        if (uploadRes?.imageUrl) {
+          setBrandingLogo(uploadRes.imageUrl);
+          return;
+        }
+      } catch {
+        // Fallback to dataUrl
+      }
+      setBrandingLogo(dataUrl);
+    } catch (err: any) {
+      setBrandingError(err instanceof Error ? err.message : "লোগো আপলোড ব্যর্থ হয়েছে");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  }
+
+  async function handleBrandingSave() {
+    if (brandingEnabled && !brandingInstitute.trim()) {
+      setBrandingError("প্রতিষ্ঠানের নাম খালি রাখা যাবে না।");
+      return;
+    }
+
+    try {
+      setBrandingSaving(true);
+      setBrandingError(null);
+      setBrandingSuccess(null);
+
+      const updated = await clientApi.updateProfile({
+        institute: brandingInstitute.trim(),
+        instituteLogo: brandingLogo.trim(),
+        instituteBranding: brandingEnabled
+      });
+
+      setUser((prev) => ({
+        ...prev,
+        ...updated,
+        institute: updated?.institute ?? brandingInstitute.trim(),
+        instituteLogo: updated?.instituteLogo ?? brandingLogo.trim(),
+        instituteBranding: updated?.instituteBranding ?? brandingEnabled
+      }));
+
+      setEditForm((prev) => ({
+        ...prev,
+        institute: updated?.institute ?? brandingInstitute.trim()
+      }));
+
+      setBrandingSuccess("প্রতিষ্ঠানের ব্র্যান্ডিং সেটিংস সফলভাবে সংরক্ষিত হয়েছে!");
+      router.refresh();
+    } catch (err: any) {
+      let msg = err instanceof Error ? err.message : "ব্র্যান্ডিং আপডেট ব্যর্থ হয়েছে";
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.message) msg = parsed.message;
+      } catch {}
+      setBrandingError(msg);
+    } finally {
+      setBrandingSaving(false);
+    }
+  }
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -124,6 +221,7 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
         phone: updated?.phone ?? editForm.phone.trim(),
         institute: updated?.institute ?? editForm.institute.trim()
       }));
+      setBrandingInstitute(editForm.institute.trim());
 
       setProfileSuccess("Profile details updated successfully!");
       setIsEditing(false);
@@ -488,6 +586,23 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
                     </div>
 
                     <div className="rounded-lg border p-3 bg-muted/20">
+                      <span className="text-muted-foreground block text-[11px] font-medium uppercase">Institute Branding</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        {user.instituteLogo && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={user.instituteLogo}
+                            alt="Logo"
+                            className="h-5 w-5 rounded object-contain border bg-white"
+                          />
+                        )}
+                        <span className={`font-semibold text-xs ${user.instituteBranding ? "text-emerald-600" : "text-muted-foreground"}`}>
+                          {user.instituteBranding ? "Active (লোগো ও নাম হেডার যুক্ত)" : "Disabled (বন্ধ)"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border p-3 bg-muted/20">
                       <span className="text-muted-foreground block text-[11px] font-medium uppercase">Account Role</span>
                       <span className="font-semibold text-foreground text-sm block mt-0.5 capitalize">
                         {user.role} Account
@@ -500,6 +615,301 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
                         {user.id}
                       </span>
                     </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Institute Branding & Custom Header Card */}
+            <Card className="border shadow-soft bg-card">
+              <CardHeader className="pb-3 border-b">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400 shrink-0">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold flex items-center gap-2">
+                        Institute Branding (প্রতিষ্ঠানের ব্র্যান্ডিং ও লোগো)
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        পরীক্ষার প্রশ্নপত্রের শীর্ষে প্রতিষ্ঠানের নিজস্ব লোগো ও নাম প্রদর্শন করুন
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={
+                      canUseBranding
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold self-start sm:self-auto"
+                        : "bg-amber-50 text-amber-700 border-amber-300 font-semibold self-start sm:self-auto"
+                    }
+                  >
+                    {canUseBranding ? (
+                      <span className="flex items-center gap-1">
+                        <Check className="h-3 w-3" /> ব্র্যান্ডিং অনুমোদিত
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <Lock className="h-3 w-3" /> আপগ্রেড প্রয়োজন
+                      </span>
+                    )}
+                  </Badge>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-5 space-y-5">
+                {brandingSuccess && (
+                  <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{brandingSuccess}</span>
+                  </div>
+                )}
+                {brandingError && (
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-xs text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                    <span>{brandingError}</span>
+                  </div>
+                )}
+
+                {/* Plan restriction warning if Free plan */}
+                {!canUseBranding && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-start gap-2.5">
+                      <Lock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-sm">প্যাকেজ সীমাবদ্ধতা (Free Plan)</p>
+                        <p className="mt-0.5 leading-relaxed text-muted-foreground">
+                          আপনার বর্তমান <strong>Free</strong> প্যাকেজে প্রশ্নপত্রে প্রতিষ্ঠানের নিজস্ব নাম ও লোগো যুক্ত করার সুবিধা অন্তর্ভুক্ত নয়। Small, Pro, Ultra অথবা Diamond প্যাকেজে আপগ্রেড করে নিজস্ব ব্র্যান্ডিং সক্রিয় করুন।
+                        </p>
+                      </div>
+                    </div>
+                    <Button asChild size="sm" variant="primary" className="shrink-0 font-semibold h-8">
+                      <Link href="/dashboard/subscription">প্যাকেজ আপগ্রেড করুন</Link>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Radio Slide Button (Toggle Switch) */}
+                <div className="flex items-center justify-between p-3.5 rounded-xl border bg-muted/20">
+                  <div className="space-y-0.5 pr-4">
+                    <label
+                      htmlFor="branding-switch"
+                      className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Sparkles className="h-4 w-4 text-teal-600" />
+                      প্রশ্নপত্রে প্রতিষ্ঠানের ব্র্যান্ডিং প্রদর্শন করুন (Enable Branding)
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      সক্রিয় করা হলে আপনার তৈরি সকল প্রশ্নপত্রের মূল হেডারে প্রতিষ্ঠানের লোগো ও নাম মুদ্রিত হবে।
+                    </p>
+                  </div>
+
+                  {/* Radio Slide Button Toggle */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
+                      {brandingEnabled ? "ON" : "OFF"}
+                    </span>
+                    <button
+                      id="branding-switch"
+                      type="button"
+                      role="switch"
+                      aria-checked={brandingEnabled}
+                      disabled={!canUseBranding || brandingSaving}
+                      onClick={() => {
+                        if (!canUseBranding) return;
+                        setBrandingEnabled(!brandingEnabled);
+                        setBrandingSuccess(null);
+                        setBrandingError(null);
+                      }}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                        !canUseBranding
+                          ? "bg-muted cursor-not-allowed opacity-60"
+                          : brandingEnabled
+                          ? "bg-teal-600"
+                          : "bg-muted-foreground/30"
+                      }`}
+                      title={!canUseBranding ? "Upgrade plan to enable branding" : "Toggle institute branding"}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          brandingEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded Fields when Branding is Enabled */}
+                {brandingEnabled && canUseBranding && (
+                  <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                    {/* Institute Name Input */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        প্রতিষ্ঠানের নাম (Institute / School / College Name) *
+                      </label>
+                      <input
+                        type="text"
+                        value={brandingInstitute}
+                        onChange={(e) => setBrandingInstitute(e.target.value)}
+                        placeholder="যেমন: ঢাকা রেসিডেনসিয়াল মডেল কলেজ"
+                        className="mt-1.5 h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <span className="text-[11px] text-muted-foreground mt-1 block">
+                        এই নামটি পরীক্ষার প্রশ্নপত্রের শীর্ষভাগে প্রধান হেডার হিসেবে মুদ্রিত হবে।
+                      </span>
+                    </div>
+
+                    {/* Institute Logo Upload & URL */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        প্রতিষ্ঠানের লোগো (Institute Logo)
+                      </label>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* File Upload Option */}
+                        <div className="border border-dashed rounded-lg p-3.5 bg-muted/10 flex flex-col items-center justify-center text-center gap-2">
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">লোগো ইমেজ আপলোড করুন</p>
+                            <p className="text-[10px] text-muted-foreground">PNG, JPG বা WebP (সর্বোচ্চ ২ MB)</p>
+                          </div>
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={isUploadingLogo || brandingSaving}
+                              onChange={handleLogoUpload}
+                              className="hidden"
+                            />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition shadow-2xs">
+                              {isUploadingLogo ? "আপলোড হচ্ছে..." : "ফাইল নির্বাচন করুন"}
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* Direct URL Input Option */}
+                        <div className="border rounded-lg p-3.5 bg-muted/10 flex flex-col justify-between gap-2">
+                          <div>
+                            <span className="text-xs font-semibold text-foreground block">লোগোর সরাসরি লিঙ্ক (URL)</span>
+                            <span className="text-[10px] text-muted-foreground block mt-0.5">
+                              আপনার ওয়েবসাইটের বা ক্লাউড ইমেজের সরাসরি লিঙ্ক দিতে পারেন
+                            </span>
+                          </div>
+                          <input
+                            type="url"
+                            value={brandingLogo}
+                            onChange={(e) => setBrandingLogo(e.target.value)}
+                            placeholder="https://example.com/logo.png"
+                            className="h-8 w-full rounded-md border bg-background px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Current Logo Preview Thumbnail */}
+                      {brandingLogo && (
+                        <div className="mt-3 flex items-center justify-between p-2.5 rounded-lg border bg-muted/20">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-md border bg-white flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={brandingLogo}
+                                alt="Institute Logo Preview"
+                                className="h-full w-full object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            </div>
+                            <div className="truncate">
+                              <p className="text-xs font-semibold text-foreground">লোগো সংযুক্ত রয়েছে</p>
+                              <p className="text-[10px] text-muted-foreground truncate max-w-[280px]">
+                                {brandingLogo.startsWith("data:") ? "Local Image Data" : brandingLogo}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setBrandingLogo("")}
+                            className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive gap-1"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            মুছুন
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Live Header Visual Preview */}
+                    <div className="pt-2">
+                      <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        প্রশ্নপত্রে হেডার প্রিভিউ (Live Header Preview)
+                      </span>
+                      <div className="rounded-lg border bg-white text-slate-900 p-4 shadow-xs">
+                        <div className="relative border-b pb-3 text-center">
+                          {brandingLogo && (
+                            <div className="absolute left-0 top-0 h-10 w-10 flex items-center justify-center">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={brandingLogo}
+                                alt="Logo"
+                                className="max-h-9 max-w-9 object-contain"
+                              />
+                            </div>
+                          )}
+                          <h3 className="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
+                            {brandingInstitute || "আপনার প্রতিষ্ঠানের নাম"}
+                          </h3>
+                          <p className="text-xs font-medium text-slate-700 mt-0.5">
+                            অর্ধ-বার্ষিক পরীক্ষা - ২০২৬
+                          </p>
+                          <div className="mt-1 flex items-center justify-between text-[11px] text-slate-600 font-medium px-2">
+                            <span>শ্রেণি: দশম</span>
+                            <span>বিষয়: পদার্থবিজ্ঞান</span>
+                            <span>পূর্ণমান: ১০০</span>
+                            <span>সময়: ৩ ঘণ্টা</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Save Button for Branding */}
+                    <div className="flex items-center justify-end pt-3 border-t">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        disabled={brandingSaving}
+                        onClick={handleBrandingSave}
+                        className="gap-1.5 font-semibold bg-teal-600 hover:bg-teal-700 text-white"
+                      >
+                        <Save className="h-4 w-4" />
+                        {brandingSaving ? "সংরক্ষণ হচ্ছে..." : "ব্র্যান্ডিং সেটিংস সংরক্ষণ করুন"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* If branding was disabled but user clicked to toggle it off, offer save */}
+                {!brandingEnabled && canUseBranding && user.instituteBranding && (
+                  <div className="flex items-center justify-between pt-2 border-t text-xs">
+                    <span className="text-muted-foreground">
+                      ব্র্যান্ডিং নিষ্ক্রিয় করার পরিবর্তনটি সংরক্ষণ করুন।
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={brandingSaving}
+                      onClick={handleBrandingSave}
+                      className="gap-1.5 font-semibold"
+                    >
+                      <Save className="h-4 w-4" />
+                      সংরক্ষণ করুন
+                    </Button>
                   </div>
                 )}
               </CardContent>

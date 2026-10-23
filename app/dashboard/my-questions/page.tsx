@@ -29,7 +29,7 @@ export default async function MyQuestionsPage() {
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">তৈরিকৃত প্রশ্নপত্র দেখতে, এক্সপোর্ট করতে বা মুছে ফেলতে পারেন।</p>
         </div>
         <Button asChild>
-          <Link href="/dashboard/papers/new">
+          <Link href="/dashboard/question-bank">
             <FileQuestion className="h-4 w-4" />
             নতুন প্রশ্নপত্র
           </Link>

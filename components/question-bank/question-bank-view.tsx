@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -1607,8 +1608,8 @@ export function QuestionBankView({
       />
 
       {/* Delete Confirmation Modal */}
-      {deleteTarget.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+      {deleteTarget.open && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md w-screen h-screen min-h-[100dvh]">
           <div className="w-full max-w-sm rounded-xl border bg-card p-5 shadow-2xl">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
@@ -1642,7 +1643,8 @@ export function QuestionBankView({
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Floating Sticky Action Bar when questions are selected */}

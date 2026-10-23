@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BookOpen, Check, Filter, Layers, Search, Tag, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import { AlertTriangle, BookOpen, Check, Filter, Layers, Lock, Search, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
 import { apiRequest } from "@/lib/client-api";
@@ -16,6 +18,11 @@ type ImportFromBankModalProps = {
 };
 
 export function ImportFromBankModal({ open, onClose, onImport, defaultCategory }: ImportFromBankModalProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [questions, setQuestions] = useState<BankQuestion[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -201,10 +208,10 @@ export function ImportFromBankModal({ open, onClose, onImport, defaultCategory }
     onClose();
   }
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-2.5 sm:p-4 backdrop-blur-sm overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-2.5 sm:p-4 backdrop-blur-md overflow-y-auto w-screen h-screen min-h-[100dvh]">
       <div className="relative my-auto sm:my-6 flex h-[92vh] sm:h-[85vh] w-full max-w-3xl flex-col rounded-xl border bg-card shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b p-3.5 sm:p-5">
@@ -369,9 +376,14 @@ export function ImportFromBankModal({ open, onClose, onImport, defaultCategory }
         {/* Question List */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {error && (
-            <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{error}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-900 dark:text-amber-200 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 shrink-0 text-amber-600" />
+                <span className="font-medium">{error}</span>
+              </div>
+              <Button asChild size="sm" variant="primary" className="h-7 text-xs shrink-0 font-semibold bg-teal-600 hover:bg-teal-700 text-white">
+                <Link href="/dashboard/subscription">প্যাকেজ আপগ্রেড করুন</Link>
+              </Button>
             </div>
           )}
 
@@ -557,6 +569,7 @@ export function ImportFromBankModal({ open, onClose, onImport, defaultCategory }
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

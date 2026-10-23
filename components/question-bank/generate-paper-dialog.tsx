@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -77,6 +78,11 @@ export function GeneratePaperDialog({
 }: GeneratePaperDialogProps) {
   const router = useRouter();
   const isPro = user.plan === "pro" || user.role === "admin";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [hierarchy, setHierarchy] = useState<ClassHierarchy[]>([]);
   const [loadingHierarchy, setLoadingHierarchy] = useState(false);
@@ -356,7 +362,7 @@ export function GeneratePaperDialog({
     return count;
   }, [paperType, mcqCount, cqCount]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -437,8 +443,8 @@ export function GeneratePaperDialog({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-2 sm:p-4 md:p-6 backdrop-blur-md overflow-hidden animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-2 sm:p-4 md:p-6 backdrop-blur-md overflow-hidden animate-in fade-in duration-200 w-screen h-screen min-h-[100dvh]">
       <div className="relative w-full max-w-4xl xl:max-w-5xl max-h-[92vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
@@ -1197,6 +1203,7 @@ export function GeneratePaperDialog({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
