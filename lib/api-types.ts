@@ -83,6 +83,7 @@ export type Paper = {
   setName?: string;
   mcqSectionTitle?: string;
   cqSectionTitle?: string;
+  sectionFlow?: "separate" | "single";
   status: "draft" | "published" | "archived";
   questions: Array<{
     id: string;

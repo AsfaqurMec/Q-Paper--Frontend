@@ -429,7 +429,7 @@ export function QuestionFormModal({
         </div>
 
         {/* SCROLLABLE BODY */}
-        <div className="overflow-y-auto flex-1 min-h-0 px-3.5 sm:px-5 py-3 sm:py-4">
+        <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-3.5 sm:px-5 py-3 sm:py-4">
           <form onSubmit={handleSubmit} className="space-y-4">
 
             {error && (

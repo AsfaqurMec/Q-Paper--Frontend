@@ -483,7 +483,7 @@ export function AdminUserManagementView({
                 <p>কোনো রিকোয়েস্ট পাওয়া যায়নি।</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-xs min-w-[760px]">
                   <thead>
                     <tr className="border-b text-left text-muted-foreground bg-muted/20">
@@ -683,7 +683,7 @@ export function AdminUserManagementView({
           </CardHeader>
 
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-xs min-w-[660px]">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground bg-muted/20">
@@ -878,7 +878,7 @@ export function AdminUserManagementView({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle className="text-emerald-600 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" />
@@ -960,7 +960,7 @@ export function AdminUserManagementView({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle className="text-rose-600 flex items-center gap-2">
               <XCircle className="h-5 w-5" />
@@ -1005,7 +1005,7 @@ export function AdminUserManagementView({
       {/* CREATE / EDIT PAYMENT OPTION MODAL                             */}
       {/* ============================================================== */}
       <Dialog open={optionModalOpen} onOpenChange={setOptionModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-primary" />

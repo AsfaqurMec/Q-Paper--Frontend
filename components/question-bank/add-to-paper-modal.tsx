@@ -68,7 +68,7 @@ export function AddToPaperModal({ open, questionIds, onClose, onSuccess }: AddTo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="relative my-auto max-h-[92vh] overflow-y-auto w-full max-w-md rounded-xl border bg-card p-4 sm:p-6 shadow-2xl">
+      <div className="relative my-auto max-h-[92vh] overflow-y-auto custom-scrollbar w-full max-w-md rounded-xl border bg-card p-4 sm:p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b pb-3 sm:pb-4">
           <div>
             <h2 className="text-lg font-semibold">Add to Exam Paper</h2>

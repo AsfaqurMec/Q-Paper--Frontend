@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertCircle,
+  ArrowLeft,
   BadgeDollarSign,
   BookOpen,
   CheckCircle2,
@@ -40,6 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, clientApi } from "@/lib/client-api";
 import { useAppModal } from "@/components/modal-provider";
+import { cn } from "@/lib/utils";
 import { AdminCurriculumView } from "@/components/admin-curriculum-view";
 import { AdminUserManagementView } from "@/components/admin-user-management-view";
 import { AdminPlansView } from "@/components/admin-plans-view";
@@ -106,6 +108,7 @@ export function AdminDashboardView({
   const [ticketReplyStatus, setTicketReplyStatus] = useState<string>("in_progress");
   const [ticketReplying, setTicketReplying] = useState(false);
   const [syncingTickets, setSyncingTickets] = useState(false);
+  const [adminMobileTicketTab, setAdminMobileTicketTab] = useState<"list" | "thread">("list");
 
   // Sync tickets function for Admin
   const syncAdminTickets = async (silent = true) => {
@@ -890,7 +893,7 @@ export function AdminDashboardView({
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 divide-y max-h-[420px] overflow-y-auto">
+              <CardContent className="p-0 divide-y max-h-[420px] overflow-y-auto custom-scrollbar">
                 {(initialStats.activityFeed || []).map((act) => (
                   <div key={act.id} className="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors flex items-start gap-3 text-xs">
                     <div className="mt-0.5 rounded-full p-1.5 shrink-0 bg-muted/80">
@@ -1000,7 +1003,7 @@ export function AdminDashboardView({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
+          <CardContent className="p-0 overflow-x-auto custom-scrollbar">
             <table className="w-full text-xs text-left min-w-[680px]">
               <thead className="bg-muted/40 border-b text-[11px] font-semibold text-muted-foreground uppercase">
                 <tr>
@@ -1534,7 +1537,7 @@ export function AdminDashboardView({
       {activeTab === "tickets" && (
         <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
           {/* Left: Ticket List */}
-          <Card className="h-fit">
+          <Card className={cn("h-fit", adminMobileTicketTab === "thread" ? "hidden lg:block" : "block")}>
             <CardHeader className="pb-3 border-b space-y-2.5">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -1575,13 +1578,16 @@ export function AdminDashboardView({
                 ))}
               </div>
             </CardHeader>
-            <CardContent className="p-0 divide-y max-h-[600px] overflow-y-auto">
+            <CardContent className="p-0 divide-y max-h-[calc(100vh-16rem)] sm:max-h-[600px] overflow-y-auto custom-scrollbar">
               {filteredTickets.map((t) => {
                 const isSelected = selectedTicket?.id === t.id;
                 return (
                   <div
                     key={t.id}
-                    onClick={() => setSelectedTicket(t)}
+                    onClick={() => {
+                      setSelectedTicket(t);
+                      setAdminMobileTicketTab("thread");
+                    }}
                     className={`p-3.5 cursor-pointer transition-colors ${
                       isSelected
                         ? "bg-primary/10 border-l-4 border-l-primary"
@@ -1622,16 +1628,27 @@ export function AdminDashboardView({
           </Card>
 
           {/* Right: Message Details & Admin Reply */}
-          <Card className="flex flex-col min-h-[520px]">
+          <Card className={cn("flex flex-col min-h-[520px]", adminMobileTicketTab === "list" ? "hidden lg:flex" : "flex")}>
             {selectedTicket ? (
               <>
                 <CardHeader className="border-b pb-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h2 className="text-base font-bold text-foreground">{selectedTicket.subject}</h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Author: {selectedTicket.userName} ({selectedTicket.userEmail}) · ID: {selectedTicket.id}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="lg:hidden h-8 w-8 p-0 shrink-0"
+                        onClick={() => setAdminMobileTicketTab("list")}
+                        title="Back to tickets list"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                      <div>
+                        <h2 className="text-base font-bold text-foreground">{selectedTicket.subject}</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Author: {selectedTicket.userName} ({selectedTicket.userEmail}) · ID: {selectedTicket.id}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs capitalize">
@@ -1653,7 +1670,7 @@ export function AdminDashboardView({
                   </div>
                 </CardHeader>
 
-                <CardContent className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[380px]">
+                <CardContent className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[calc(100vh-20rem)] sm:max-h-[380px] custom-scrollbar">
                   {(selectedTicket.messages || []).map((msg, idx) => {
                     const isAdmin = msg.senderRole === "admin";
                     return (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
@@ -49,6 +50,7 @@ type ProfileViewProps = {
 
 
 export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: ProfileViewProps) {
+  const router = useRouter();
   const [user, setUser] = useState<UserSession>(initialUser);
   const [activeTab, setActiveTab] = useState<"profile" | "security" | "plan" | "usage">("profile");
 
@@ -118,15 +120,21 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
       setUser((prev) => ({
         ...prev,
         ...updated,
-        name: updated.name || editForm.name.trim(),
-        phone: updated.phone || editForm.phone.trim(),
-        institute: updated.institute || editForm.institute.trim()
+        name: updated?.name || editForm.name.trim(),
+        phone: updated?.phone ?? editForm.phone.trim(),
+        institute: updated?.institute ?? editForm.institute.trim()
       }));
 
       setProfileSuccess("Profile details updated successfully!");
       setIsEditing(false);
-    } catch (err) {
-      setProfileError(err instanceof Error ? err.message : "Failed to update profile");
+      router.refresh();
+    } catch (err: any) {
+      let msg = err instanceof Error ? err.message : "Failed to update profile";
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.message) msg = parsed.message;
+      } catch {}
+      setProfileError(msg);
     } finally {
       setProfileSaving(false);
     }

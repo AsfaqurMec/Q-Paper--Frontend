@@ -33,11 +33,13 @@ type PaperPreviewProps = {
     setName?: string;
     mcqSectionTitle?: string;
     cqSectionTitle?: string;
+    sectionFlow?: "separate" | "single";
   };
   questions?: PreviewQuestion[];
   layout?: "single" | "split";
   cqLayout?: "single" | "split";
   questionsPerPage?: number;
+  sectionFlow?: "separate" | "single";
   activeSet?: string;
   onMoveQuestion?: (fromIndex: number, toIndex: number) => void;
   onUpdateQuestionSerial?: (questionId: string, newSerial: string) => void;
@@ -114,7 +116,8 @@ function paginatePreviewQuestions(
   questions: PreviewQuestion[],
   isMcqSplit: boolean,
   isCqSplit: boolean,
-  perPage: number
+  perPage: number,
+  sectionFlow: "separate" | "single" = "separate"
 ): PreviewQuestion[][] {
   const pages: PreviewQuestion[][] = [];
   let currentIndex = 0;
@@ -132,6 +135,12 @@ function paginatePreviewQuestions(
 
     while (currentIndex < questions.length) {
       const q = questions[currentIndex];
+
+      // If separate section flow and moving from MCQ to CQ, start CQ on next page
+      if (sectionFlow === "separate" && q.type === "cq" && pageItems.some((item) => (item.type || "mcq") === "mcq")) {
+        break;
+      }
+
       const qSplit = q.type === "cq" ? isCqSplit : isMcqSplit;
       const h = estimateQuestionHeight(q, qSplit);
 
@@ -421,6 +430,7 @@ export function PaperPreview({
   cqLayout,
   questionsPerPage,
   activeSet,
+  sectionFlow,
   onMoveQuestion,
   onUpdateQuestionSerial
 }: PaperPreviewProps) {
@@ -449,8 +459,10 @@ export function PaperPreview({
   const cqTotalMarks = useMemo(() => cqs.reduce((sum: number, q: PreviewQuestion) => sum + (q.marks || 10), 0), [cqs]);
   const hasBoth = mcqs.length > 0 && cqs.length > 0;
 
+  const resolvedSectionFlow = paper?.sectionFlow ?? sectionFlow ?? "separate";
+
   // Paginate questions
-  const pages = paginatePreviewQuestions(resolvedQuestions, isMcqSplit, isCqSplit, resolvedQuestionsPerPage);
+  const pages = paginatePreviewQuestions(resolvedQuestions, isMcqSplit, isCqSplit, resolvedQuestionsPerPage, resolvedSectionFlow);
 
   const renderQuestionBlock = (question: PreviewQuestion, displayIndex: number) => {
     const globalIndex = resolvedQuestions.findIndex((q) => q.id === question.id);
@@ -497,7 +509,7 @@ export function PaperPreview({
         const prevCqCount = prevPagesQuestions.filter((q) => q.type === "cq").length;
 
         const showMcqHeader = pageMcqs.length > 0 && prevMcqCount === 0;
-        const showCqHeader = pageCqs.length > 0 && prevCqCount === 0;
+        const showCqHeader = pageCqs.length > 0 && prevCqCount === 0 && (resolvedSectionFlow !== "single" || mcqs.length === 0);
 
         const mcqSplit = isMcqSplit ? splitForPage(pageMcqs, resolvedQuestionsPerPage, pageIndex, true) : { left: pageMcqs, right: [] };
         const cqSplit = isCqSplit ? splitForPage(pageCqs, resolvedQuestionsPerPage, pageIndex, true) : { left: pageCqs, right: [] };

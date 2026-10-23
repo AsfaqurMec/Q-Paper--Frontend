@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   Clock,
   CheckCircle2,
   MessageSquare,
@@ -24,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAppModal } from "@/components/modal-provider";
 import { clientApi } from "@/lib/client-api";
+import { cn } from "@/lib/utils";
 import type { SupportTicket, TicketMessage } from "@/lib/api-types";
 
 export function SupportTicketsView({ initialTickets }: { initialTickets: SupportTicket[] }) {
@@ -31,6 +33,7 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
   const [tickets, setTickets] = useState<SupportTicket[]>(initialTickets);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(initialTickets[0] || null);
   const [activeTab, setActiveTab] = useState<"all" | "open" | "resolved">("all");
+  const [mobileTab, setMobileTab] = useState<"list" | "thread">("list");
   const [loadingThread, setLoadingThread] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>("এখনই");
@@ -76,6 +79,7 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
   // Fetch full ticket thread on select
   const handleSelectTicket = useCallback(async (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
+    setMobileTab("thread");
     try {
       setLoadingThread(true);
       const fresh = await clientApi.getTicket(ticket.id);
@@ -372,7 +376,7 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
       {/* Main Grid: Ticket List + Thread Details */}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-[380px_1fr]">
         {/* Ticket List */}
-        <Card className="h-fit">
+        <Card className={cn("h-fit", mobileTab === "thread" ? "hidden lg:block" : "block")}>
           <CardHeader className="pb-3 border-b space-y-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
@@ -407,7 +411,7 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
               <span className="text-primary font-medium">রিয়েল-টাইম লাইভ চ্যাট</span>
             </div>
           </CardHeader>
-          <CardContent className="p-0 divide-y max-h-[600px] overflow-y-auto">
+          <CardContent className="p-0 divide-y max-h-[calc(100vh-14rem)] overflow-y-auto custom-scrollbar">
             {filteredTickets.map((ticket) => {
               const isSelected = selectedTicket?.id === ticket.id;
               const msgCount = ticket.messages?.length || (ticket.replies ? ticket.replies + 1 : 1);
@@ -450,7 +454,7 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
         </Card>
 
         {/* Thread Details & Chat View */}
-        <Card className="flex flex-col min-h-[550px] shadow-sm">
+        <Card className={cn("flex flex-col min-h-[500px] shadow-sm", mobileTab === "list" ? "hidden lg:flex" : "flex")}>
           {selectedTicket ? (
             <>
               {/* Header */}
@@ -458,7 +462,17 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base sm:text-lg font-bold text-foreground">{selectedTicket.subject}</h2>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMobileTab("list")}
+                        className="h-8 px-2 text-xs gap-1 lg:hidden text-primary hover:text-primary shrink-0"
+                        title="সব টিকিটে ফিরে যান"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span>তালিকা</span>
+                      </Button>
+                      <h2 className="text-base sm:text-lg font-bold text-foreground truncate">{selectedTicket.subject}</h2>
                       {getStatusBadge(selectedTicket.status)}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -501,7 +515,7 @@ export function SupportTicketsView({ initialTickets }: { initialTickets: Support
               </CardHeader>
 
               {/* Messages Body */}
-              <CardContent className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[460px] min-h-[300px] bg-slate-50/30 dark:bg-slate-950/20">
+              <CardContent className="flex-1 p-3 sm:p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-18rem)] min-h-[300px] bg-slate-50/30 dark:bg-slate-950/20 custom-scrollbar">
                 {loadingThread && (!selectedTicket.messages || selectedTicket.messages.length === 0) ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
                     <RefreshCw className="h-6 w-6 animate-spin text-primary" />

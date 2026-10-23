@@ -28,6 +28,8 @@ export type ExportPaperModalProps = {
   activeSet?: string;
   userPlan?: string;
   onSaveBeforeExport?: () => Promise<void>;
+  hasBoth?: boolean;
+  defaultSectionFlow?: "separate" | "single";
 };
 
 const SET_OPTIONS = [
@@ -48,12 +50,15 @@ export function ExportPaperModal({
   defaultWithAnswer = false,
   activeSet,
   userPlan = "free",
-  onSaveBeforeExport
+  onSaveBeforeExport,
+  hasBoth = true,
+  defaultSectionFlow = "separate"
 }: ExportPaperModalProps) {
   const [format, setFormat] = useState<"pdf" | "docx">(defaultFormat);
   const [withAnswer, setWithAnswer] = useState<boolean>(defaultWithAnswer);
   const [selectedSet, setSelectedSet] = useState<string>(activeSet || "");
   const [allSetsMode, setAllSetsMode] = useState<"combined" | "separate">("combined");
+  const [sectionFlow, setSectionFlow] = useState<"separate" | "single">(defaultSectionFlow || "separate");
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
@@ -66,6 +71,7 @@ export function ExportPaperModal({
       setWithAnswer(defaultWithAnswer);
       setSelectedSet(activeSet || "");
       setAllSetsMode("combined");
+      setSectionFlow(defaultSectionFlow || "separate");
       setError(null);
       setIsDownloading(false);
       setDownloadProgress(0);
@@ -74,7 +80,7 @@ export function ExportPaperModal({
       // Proactively warm up backend (Render cold-start mitigation)
       fetch("/api/backend/health").catch(() => {});
     }
-  }, [open, defaultFormat, defaultWithAnswer, activeSet]);
+  }, [open, defaultFormat, defaultWithAnswer, activeSet, defaultSectionFlow]);
 
   if (!open) return null;
 
@@ -89,6 +95,9 @@ export function ExportPaperModal({
   ) {
     const params = new URLSearchParams();
     params.set("withAnswer", withAnswer ? "true" : "false");
+    if (hasBoth !== false) {
+      params.set("sectionFlow", sectionFlow);
+    }
     if (isAll) {
       params.set("set", "all");
     } else if (setKey) {
@@ -411,6 +420,62 @@ export function ExportPaperModal({
               </div>
             )}
           </div>
+
+          {/* MCQ & CQ Page Layout Option (আলাদা পেজে বনাম একই পেজে) */}
+          {hasBoth !== false && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                MCQ ও CQ পেজ লেআউট (Page Layout)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Separate Pages */}
+                <button
+                  type="button"
+                  onClick={() => setSectionFlow("separate")}
+                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                    sectionFlow === "separate"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
+                      : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <div className="flex items-center gap-2">
+                      <Layers className={`h-4 w-4 ${sectionFlow === "separate" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-sm font-semibold text-foreground">আলাদা পেজে (Separate)</span>
+                    </div>
+                    {sectionFlow === "separate" && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <p className="text-[11px] font-medium text-primary/80">নতুন পেজ থেকে CQ শুরু হবে</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    MCQ শেষ হলে CQ নতুন পেজ থেকে হেডিংসহ শুরু হবে (প্রথাগত লেআউট)।
+                  </p>
+                </button>
+
+                {/* Single Page */}
+                <button
+                  type="button"
+                  onClick={() => setSectionFlow("single")}
+                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                    sectionFlow === "single"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
+                      : "border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className={`h-4 w-4 ${sectionFlow === "single" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="text-sm font-semibold text-foreground">একই পেজে (Single Page)</span>
+                    </div>
+                    {sectionFlow === "single" && <Check className="h-4 w-4 text-primary" />}
+                  </div>
+                  <p className="text-[11px] font-medium text-primary/80">জায়গা থাকলে একসাথে (হেডিং ছাড়া)</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    MCQ এর পর ফাঁকা জায়গা থাকলে সরাসরি CQ যুক্ত হবে, কোনো CQ হেডিং থাকবে না।
+                  </p>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Answer Option Selector: With Answer vs Without Answer */}
           <div>

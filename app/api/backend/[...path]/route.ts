@@ -88,7 +88,6 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
     const headerKeysToForward = [
       "content-type",
       "content-disposition",
-      "content-length",
       "cache-control"
     ];
     for (const key of headerKeysToForward) {

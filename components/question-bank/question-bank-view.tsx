@@ -46,6 +46,7 @@ import { AddToPaperModal } from "./add-to-paper-modal";
 import { JsonImportModal } from "./json-import-modal";
 import { CreatePaperFromSelectedModal } from "./create-paper-from-selected-modal";
 import { getBengaliClass, getBengaliSubject, getBengaliChapter, getBengaliBoard, getBengaliYear, toBengaliDigits } from "@/lib/curriculum-bengali";
+import { cn } from "@/lib/utils";
 
 const BATCH_SIZE = 30;
 
@@ -127,6 +128,7 @@ export function QuestionBankView({
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [groupByChapter, setGroupByChapter] = useState<boolean>(false);
   const [collapsedChapters, setCollapsedChapters] = useState<Set<string>>(new Set());
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [search, setSearch] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
@@ -1108,8 +1110,34 @@ export function QuestionBankView({
             </div>
           </div>
 
+          {/* Mobile Filter Toggle */}
+          <div className="flex sm:hidden items-center justify-between pt-1 border-t border-border/50">
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary py-1"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              <span>{showMobileFilters ? "ফিল্টার লুকান (Hide)" : "অতিরিক্ত ফিল্টার (More Filters)"}</span>
+              {(selectedBoard !== "all" || selectedYear !== "all" || selectedType !== "all" || selectedNature !== "all" || selectedDifficulty !== "all" || selectedTag !== "all") && (
+                <span className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-bold">
+                  সক্রিয়
+                </span>
+              )}
+            </button>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline"
+              >
+                রিসেট
+              </button>
+            )}
+          </div>
+
           {/* Second row: others (Board, Year, Question Type, Nature, Difficulty, Tag, Reset) */}
-          <div className="pt-2.5 border-t border-border/60">
+          <div className={cn("pt-2.5 border-t border-border/60", !showMobileFilters && "hidden sm:block")}>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 items-end">
               {/* Board Filter */}
               <div>
@@ -1623,31 +1651,31 @@ export function QuestionBankView({
           aria-label="Selection Actions"
           className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[96%] sm:w-[94%] max-w-2xl animate-in slide-in-from-bottom-5 duration-200"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-primary/40 bg-card/95 px-3 py-2.5 sm:px-4 sm:py-3 shadow-2xl backdrop-blur-md ring-1 ring-primary/20">
-            <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-xs shadow-xs">
+          <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-primary/40 bg-card px-3 py-2.5 sm:px-4 sm:py-3 shadow-2xl ring-1 ring-primary/20">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-xs shadow-xs">
                 {selectedIds.size}
               </span>
-              <div>
-                <p className="text-xs font-bold text-foreground">
-                  {selectedIds.size} {selectedIds.size === 1 ? "প্রশ্ন" : "টি প্রশ্ন"} নির্বাচিত (Selected)
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-foreground truncate">
+                  {selectedIds.size} {selectedIds.size === 1 ? "প্রশ্ন" : "টি প্রশ্ন"} নির্বাচিত
                 </p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
                   {selectedQuestionsList.filter((q) => (q.type || "mcq") === "mcq" && (!q.subQuestions || q.subQuestions.length === 0)).length} MCQs &middot;{" "}
                   {selectedQuestionsList.filter((q) => q.type === "cq" || (q.subQuestions && q.subQuestions.length > 0)).length} CQs
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 justify-end shrink-0">
               <Button
                 type="button"
                 size="sm"
                 onClick={() => setIsCreatePaperFromSelectedOpen(true)}
-                className="h-9 px-4 text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md shadow-indigo-500/25 gap-1.5"
+                className="h-8 sm:h-9 px-3 sm:px-4 text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md shadow-indigo-500/25 gap-1.5"
               >
-                <Sparkles className="h-4 w-4" />
-                <span>প্রশ্নপত্র তৈরি করুন</span>
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>প্রশ্নপত্র তৈরি</span>
               </Button>
 
               <Button
@@ -1660,10 +1688,10 @@ export function QuestionBankView({
                     ids: Array.from(selectedIds)
                   })
                 }
-                className="h-9 text-xs"
+                className="h-8 sm:h-9 px-2.5 sm:px-3 text-xs"
               >
                 <BookOpen className="h-3.5 w-3.5 mr-1" />
-                <span>Add to Paper</span>
+                <span>Add</span>
               </Button>
 
               <Button
@@ -1671,7 +1699,7 @@ export function QuestionBankView({
                 size="sm"
                 variant="ghost"
                 onClick={() => setSelectedIds(new Set())}
-                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 sm:h-9 sm:w-9 p-0 text-muted-foreground hover:text-foreground shrink-0"
                 title="Deselect All (নির্বাচন বাতিল)"
               >
                 <X className="h-4 w-4" />

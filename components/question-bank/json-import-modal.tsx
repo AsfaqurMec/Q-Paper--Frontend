@@ -302,7 +302,7 @@ export function JsonImportModal({
         </div>
 
         {/* Scrollable Body */}
-        <div className="space-y-4 pt-4 overflow-y-auto flex-1 pr-1">
+        <div className="space-y-4 pt-4 overflow-y-auto custom-scrollbar flex-1 pr-1">
           {errorMsg && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />

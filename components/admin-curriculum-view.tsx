@@ -1363,7 +1363,7 @@ export function AdminCurriculumView({
             </div>
           </CardHeader>
 
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-4 space-y-3 max-h-[calc(100vh-16rem)] overflow-y-auto custom-scrollbar">
             {tree.map((clsNode) => {
               const clsKey = clsNode.id || clsNode.className;
               const isClsExpanded = !!expandedClasses[clsKey];
@@ -1536,7 +1536,7 @@ export function AdminCurriculumView({
       {/* MODAL: ADD / EDIT ACADEMIC CLASS */}
       {/* ======================================================== */}
       <Dialog open={isClassModalOpen} onOpenChange={setIsClassModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
           <form onSubmit={handleSaveClass}>
             <DialogHeader>
               <DialogTitle>
@@ -1635,7 +1635,7 @@ export function AdminCurriculumView({
       {/* MODAL: ADD / EDIT SUBJECT */}
       {/* ======================================================== */}
       <Dialog open={isSubjectModalOpen} onOpenChange={setIsSubjectModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
           <form onSubmit={handleSaveSubject}>
             <DialogHeader>
               <DialogTitle>
@@ -1761,7 +1761,7 @@ export function AdminCurriculumView({
       {/* MODAL: ADD / EDIT CHAPTER */}
       {/* ======================================================== */}
       <Dialog open={isChapterModalOpen} onOpenChange={setIsChapterModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
           <form onSubmit={handleSaveChapter}>
             <DialogHeader>
               <DialogTitle>
@@ -1918,7 +1918,7 @@ export function AdminCurriculumView({
         open={detailModal.open}
         onOpenChange={(open) => setDetailModal((prev) => ({ ...prev, open }))}
       >
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
           {detailModal.loading ? (
             <div className="flex flex-col items-center justify-center p-8 gap-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -2008,7 +2008,7 @@ export function AdminCurriculumView({
                         </Button>
                       </div>
 
-                      <div className="rounded-lg border divide-y max-h-56 overflow-y-auto">
+                      <div className="rounded-lg border divide-y max-h-56 overflow-y-auto custom-scrollbar">
                         {clsData.subjects?.map((s) => (
                           <div key={s.id} className="flex items-center justify-between p-2.5 hover:bg-muted/30">
                             <div>
@@ -2092,7 +2092,7 @@ export function AdminCurriculumView({
                         </Button>
                       </div>
 
-                      <div className="rounded-lg border divide-y max-h-56 overflow-y-auto">
+                      <div className="rounded-lg border divide-y max-h-56 overflow-y-auto custom-scrollbar">
                         {subjData.chapters?.map((ch) => (
                           <div key={ch.id} className="flex items-center justify-between p-2.5 hover:bg-muted/30">
                             <div className="flex items-center gap-2 truncate">
@@ -2188,7 +2188,7 @@ export function AdminCurriculumView({
                         <Label className="font-bold text-foreground mb-1 block">
                           Recent Questions Sample
                         </Label>
-                        <div className="rounded-lg border divide-y max-h-48 overflow-y-auto">
+                        <div className="rounded-lg border divide-y max-h-48 overflow-y-auto custom-scrollbar">
                           {chapData.sampleQuestions.map((q) => (
                             <div key={q.id} className="p-2 text-xs flex items-center justify-between gap-2">
                               <span className="truncate text-foreground">{q.title}</span>

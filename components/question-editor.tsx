@@ -35,7 +35,7 @@ import { apiRequest } from "@/lib/client-api";
 import { ExportPaperModal } from "@/components/export-paper-modal";
 import { latexToCleanMath } from "@/lib/math-utils";
 import { sanitizeSvg } from "@/lib/sanitize";
-import { toStandardDigits } from "@/lib/utils";
+import { cn, toStandardDigits } from "@/lib/utils";
 import type { BankQuestion, Paper } from "@/lib/api-types";
 
 export type DraftQuestion = {
@@ -158,6 +158,7 @@ export function QuestionEditor({
   );
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  const [mobileEditorTab, setMobileEditorTab] = useState<"questions" | "preview">("questions");
   const [status, setStatus] = useState("Draft not saved yet");
   const [bankModalOpen, setBankModalOpen] = useState(false);
   const [setModalOpen, setSetModalOpen] = useState(false);
@@ -943,8 +944,39 @@ export function QuestionEditor({
 
   // Admin View: 2-Column Grid Layout (Question Editor + Live Paper Preview)
   return (
-    <div className="grid gap-6 xl:grid-cols-[560px_1fr]">
-      <div className="space-y-4">
+    <div className="space-y-4">
+      {/* Mobile/Tablet View Toggle (visible on < xl screens) */}
+      <div className="flex xl:hidden items-center p-1 rounded-lg border border-border bg-muted/60 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setMobileEditorTab("questions")}
+          className={cn(
+            "flex-1 py-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
+            mobileEditorTab === "questions"
+              ? "bg-card text-foreground shadow-xs font-bold"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Pencil className="h-3.5 w-3.5 text-primary" />
+          <span>প্রশ্ন সম্পাদনা ({questions.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileEditorTab("preview")}
+          className={cn(
+            "flex-1 py-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
+            mobileEditorTab === "preview"
+              ? "bg-card text-foreground shadow-xs font-bold"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Layers className="h-3.5 w-3.5 text-teal-600" />
+          <span>লাইভ প্রিভিউ (Paper Preview)</span>
+        </button>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[560px_1fr]">
+        <div className={cn("space-y-4", mobileEditorTab === "preview" ? "hidden xl:block" : "block")}>
         {/* Header card with metadata & actions */}
         <div className="rounded-lg border bg-card p-5 shadow-soft">
           <div className="flex items-center justify-between">
@@ -1704,7 +1736,10 @@ export function QuestionEditor({
       </div>
 
       {/* Right Column: Live Paper Preview */}
-      <div className="xl:sticky xl:top-20 xl:self-start">
+      <div className={cn(
+        "xl:sticky xl:top-0 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto custom-scrollbar pr-1",
+        mobileEditorTab === "questions" ? "hidden xl:block" : "block"
+      )}>
         {activePreviewSet && (
           <div className="mb-2 flex items-center justify-between rounded-md border border-teal-200 bg-teal-50/90 px-3 py-1.5 text-xs text-teal-900 shadow-2xs">
             <span className="flex items-center gap-1.5 font-medium">
@@ -1737,6 +1772,7 @@ export function QuestionEditor({
           onUpdateQuestionSerial={(qId, newSerial) => updateQuestion(qId, { number: newSerial })}
         />
       </div>
+    </div>
 
       {/* Status Modal for Save / Export */}
       <StatusModal
@@ -1758,6 +1794,8 @@ export function QuestionEditor({
         defaultFormat={exportModal.format}
         activeSet={activePreviewSet || currentPaper.setName}
         userPlan={userPlan}
+        hasBoth={questions.some((q) => (q.type || "mcq") === "mcq") && questions.some((q) => q.type === "cq")}
+        defaultSectionFlow={currentPaper.sectionFlow || "separate"}
         onSaveBeforeExport={async () => {
           await saveAll({ silent: true });
         }}

@@ -102,6 +102,7 @@ export function PaperActions({
         defaultFormat={exportModal.format}
         activeSet={activeSet}
         userPlan={userPlan}
+        hasBoth={questionType === "both" || !questionType}
       />
     </>
   );

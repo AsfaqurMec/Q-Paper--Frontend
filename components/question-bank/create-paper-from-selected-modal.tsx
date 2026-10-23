@@ -323,7 +323,7 @@ export function CreatePaperFromSelectedModal({
 
           {/* Expandable Selected Questions Preview */}
           {showQuestionList && (
-            <div className="mt-3 max-h-48 overflow-y-auto rounded-xl border bg-card p-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
+            <div className="mt-3 max-h-48 overflow-y-auto custom-scrollbar rounded-xl border bg-card p-2 space-y-1.5 animate-in slide-in-from-top-2 duration-150">
               {questions.map((q, idx) => {
                 const isCq = q.type === "cq" || Boolean(q.subQuestions && q.subQuestions.length > 0);
                 return (
@@ -405,7 +405,7 @@ export function CreatePaperFromSelectedModal({
         </div>
 
         {/* Scrollable Content */}
-        <form id="create-paper-from-selected-form" onSubmit={handleCreatePaper} className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-5">
+        <form id="create-paper-from-selected-form" onSubmit={handleCreatePaper} className="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-6 space-y-4 sm:space-y-5">
           {error && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
               <AlertTriangle className="h-4 w-4 shrink-0" />

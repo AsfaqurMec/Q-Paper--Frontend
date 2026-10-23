@@ -616,7 +616,7 @@ export function GeneratePaperDialog({
           /* Main Generator Form */
           <form onSubmit={handleGenerate} className="flex-1 flex flex-col overflow-hidden">
             {/* Scrollable Form Body */}
-            <div className="flex-1 overflow-y-auto px-3.5 sm:px-6 py-3.5 sm:py-5 space-y-4 sm:space-y-5">
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-3.5 sm:px-6 py-3.5 sm:py-5 space-y-4 sm:space-y-5">
               {error && (
                 <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive">
                   <AlertTriangle className="h-4 w-4 shrink-0" />

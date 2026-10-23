@@ -112,7 +112,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
   const visibleNav = nav.filter((item) => !item.href.startsWith("/admin") || user.role === "admin");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
       {/* ======================================================== */}
       {/* MOBILE DRAWER BACKDROP & DRAWER ASIDE                     */}
       {/* ======================================================== */}
@@ -128,12 +128,12 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
         id="mobile-navigation-drawer"
         aria-label="Mobile Navigation"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col w-72 sm:w-80 max-w-[85vw] border-r bg-card/98 shadow-2xl backdrop-blur transition-transform duration-300 ease-in-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex flex-col h-full max-h-[100dvh] w-72 sm:w-80 max-w-[85vw] border-r border-border bg-card shadow-2xl overflow-hidden transition-transform duration-300 ease-in-out lg:hidden",
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Drawer Header */}
-        <div className="flex h-16 items-center justify-between border-b px-4">
+        {/* Drawer Header: Fixed at top */}
+        <div className="flex h-14 sm:h-16 shrink-0 items-center justify-between border-b border-border px-4 bg-card">
           <Link href="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2">
             <Image src={logo} alt="Q-Paper logo" className="h-7 w-auto object-contain" />
           </Link>
@@ -148,8 +148,8 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           </Button>
         </div>
 
-        {/* Drawer Navigation Links */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        {/* Drawer Navigation Links: ONLY this section is scrollable */}
+        <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-3 py-3 space-y-1">
           {visibleNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -180,12 +180,12 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           })}
         </nav>
 
-        {/* Drawer Footer / User Information & Support */}
-        <div className="border-t p-3 space-y-2.5 bg-muted/20">
+        {/* Drawer Footer / User Information & Support: Fixed at bottom */}
+        <div className="shrink-0 border-t border-border p-3 space-y-2.5 bg-card">
           <Link
             href="/dashboard/profile"
             onClick={() => setDrawerOpen(false)}
-            className="flex items-center gap-2.5 rounded-lg border bg-card p-2 text-xs transition hover:border-primary/50"
+            className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/40 p-2 text-xs transition hover:border-primary/50"
           >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs ring-1 ring-primary/20">
               {(user.name || user.email || "U").charAt(0).toUpperCase()}
@@ -215,15 +215,15 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
       </aside>
 
       {/* ======================================================== */}
-      {/* DESKTOP SIDEBAR (lg:block)                                */}
+      {/* DESKTOP SIDEBAR (lg:flex)                                 */}
       {/* ======================================================== */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden border-r bg-card/95 px-3 py-5 backdrop-blur transition-all duration-300 lg:flex lg:flex-col",
+          "hidden border-r border-border bg-card px-3 py-4 lg:flex lg:flex-col h-full shrink-0 overflow-hidden transition-all duration-300 z-30",
           collapsed ? "w-20" : "w-64"
         )}
       >
-        <div className="w-full flex justify-end">
+        <div className="w-full flex justify-end shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -235,7 +235,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           </Button>
         </div>
 
-        <div className="flex items-center justify-between gap-2 mt-1">
+        <div className="flex items-center justify-between gap-2 mt-1 shrink-0">
           <Link href="/dashboard" className={cn("flex items-center gap-3 px-2", collapsed && "justify-center w-full")}>
             {collapsed ? (
               <Image src={logosmall} alt="Q-Paper logo" className="h-8 w-8 object-contain" />
@@ -245,7 +245,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           </Link>
         </div>
 
-        <nav className="mt-6 flex-1 space-y-1 overflow-y-auto">
+        <nav className="mt-4 flex-1 min-h-0 space-y-1 overflow-y-auto overscroll-contain custom-scrollbar pr-1">
           {visibleNav.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -272,22 +272,24 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           })}
         </nav>
 
-        <div className={cn("mt-auto rounded-lg border bg-background p-3.5 shadow-2xs", collapsed && "hidden")}>
-          <div className="flex items-center gap-2 text-xs font-semibold">
-            <LifeBuoy className="h-4 w-4 text-primary shrink-0" />
-            <span>Priority Support</span>
+        <div className={cn("mt-auto pt-3 shrink-0", collapsed && "hidden")}>
+          <div className="rounded-lg border border-border bg-background p-3.5 shadow-2xs">
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <LifeBuoy className="h-4 w-4 text-primary shrink-0" />
+              <span>Priority Support</span>
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground leading-normal">
+              ৭২,২২৬+ প্রশ্ন ব্যাংক ও ওএমআর ৪-সেট প্রশ্ন সহায়তা প্রস্তুত।
+            </p>
           </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground leading-normal">
-            ৭২,২২৬+ প্রশ্ন ব্যাংক ও ওএমআর ৪-সেট প্রশ্ন সহায়তা প্রস্তুত।
-          </p>
         </div>
       </aside>
 
       {/* ======================================================== */}
       {/* MAIN WRAPPER & RESPONSIVE HEADER                          */}
       {/* ======================================================== */}
-      <div className={cn("transition-all duration-300", collapsed ? "lg:pl-20" : "lg:pl-64")}>
-        <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-3 border-b bg-background/95 px-2.5 sm:px-4 md:px-6 backdrop-blur">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+        <header className="shrink-0 z-20 flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-3 border-b border-border bg-background px-2.5 sm:px-4 md:px-6">
           {/* Left section: Hamburger Button + Mobile Brand */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
@@ -311,7 +313,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
               type="search"
               placeholder="Search papers, questions..."
               aria-label="Search"
-              className="h-8 sm:h-9 w-full rounded-md border bg-card/80 pl-8 pr-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-card transition"
+              className="h-8 sm:h-9 w-full rounded-md border border-input bg-card/80 pl-8 pr-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-card transition"
             />
           </div>
 
@@ -357,8 +359,10 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           </div>
         </header>
 
-        {/* Main Content with Optimized Horizontal Padding */}
-        <main className="px-2.5 sm:px-4 md:px-6 py-4 sm:py-6">{children}</main>
+        {/* Main Content: ONLY this container scrolls */}
+        <main id="app-main-content" className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-2.5 sm:px-4 md:px-6 py-4 sm:py-6">
+          {children}
+        </main>
       </div>
     </div>
   );

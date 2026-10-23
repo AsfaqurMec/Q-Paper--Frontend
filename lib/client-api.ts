@@ -33,25 +33,43 @@ async function unwrap<T>(response: Response): Promise<T> {
     }
   }
 
+  // If payload indicates successful execution, return data
+  if (payload && payload.success) {
+    return payload.data;
+  }
+
   if (!response.ok || !payload?.success) {
     const defaultMsg = response.status >= 500
       ? `Server error (${response.status})`
       : response.status === 404
         ? "Resource not found"
         : `Request failed (${response.status})`;
-    const message = payload?.message || (text && text.length < 250 && !text.includes("<html") ? text : defaultMsg);
+    let message = payload?.message;
+    if (!message && text) {
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.message) message = parsed.message;
+      } catch {}
+    }
+    if (!message) {
+      message = text && text.length < 250 && !text.includes("<html") && !text.trim().startsWith("{")
+        ? text
+        : defaultMsg;
+    }
     throw new Error(message);
   }
 
-  return payload.data;
+  return (payload as any)?.data;
 }
 
 import { getDeviceHeaders } from "@/lib/device";
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}) {
-  const normalizedPath = path.replace(/^\/api/, "");
+  const isAuthRoute = path.startsWith("/api/auth/") || path.startsWith("api/auth/");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const targetUrl = isAuthRoute ? normalizedPath : `/api/backend${path.replace(/^\/api/, "")}`;
   const deviceHeaders = typeof window !== "undefined" ? getDeviceHeaders() : {};
-  const response = await fetch(`/api/backend${normalizedPath}`, {
+  const response = await fetch(targetUrl, {
     ...options,
     headers: {
       "Content-Type": "application/json",

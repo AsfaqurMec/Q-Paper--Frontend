@@ -164,7 +164,7 @@ export default async function DashboardPage() {
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="p-0 divide-y">
+          <CardContent className="p-0 divide-y max-h-[580px] overflow-y-auto custom-scrollbar">
             {papers.map((paper) => (
               <div
                 key={paper.id}
@@ -244,7 +244,7 @@ export default async function DashboardPage() {
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 space-y-2 max-h-[480px] overflow-y-auto">
+            <CardContent className="p-3 space-y-2 max-h-[480px] overflow-y-auto custom-scrollbar">
               {FEATURED_SUBJECTS.map((sub, idx) => (
                 <Link
                   key={idx}
