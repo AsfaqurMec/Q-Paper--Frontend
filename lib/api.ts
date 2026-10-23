@@ -114,12 +114,12 @@ export async function fetchPlans(): Promise<Plan[]> {
     const json = await res.json();
     const list = json?.data || json;
     if (Array.isArray(list) && list.length > 0) {
-      return list;
+      return [...list].sort((a: Plan, b: Plan) => Number(a.price || 0) - Number(b.price || 0));
     }
   } catch (error) {
     console.error("Failed to fetch plans from backend:", error);
   }
-  return DEFAULT_PLANS;
+  return [...DEFAULT_PLANS].sort((a: Plan, b: Plan) => Number(a.price || 0) - Number(b.price || 0));
 }
 
 export const api = {

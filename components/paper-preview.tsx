@@ -25,6 +25,7 @@ export type PreviewQuestion = {
 type PaperPreviewProps = {
   paper?: {
     institute?: string;
+    instituteLogo?: string;
     name: string;
     subject: string;
     className: string;
@@ -522,20 +523,30 @@ export function PaperPreview({
         return (
           <div key={pageIndex} className="mx-auto min-h-[520px] max-w-3xl rounded-sm bg-white p-3.5 sm:p-6 md:p-8 text-slate-950 shadow-soft">
             {isFirstPage && (
-              <div className="border-b pb-4 text-center">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="w-10 sm:w-16 shrink-0" />
-                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-teal-700 truncate">{paper?.institute ?? ""}</p>
-                  {setName ? (() => {
-                    const banglaSetMap: Record<string, string> = { A: "ক", B: "খ", C: "গ", D: "ঘ" };
-                    const displaySet = isBangla ? (banglaSetMap[setName.toUpperCase()] || setName) : setName;
-                    return (
+              <div className="border-b pb-4 text-center relative">
+                {setName && (() => {
+                  const banglaSetMap: Record<string, string> = { A: "ক", B: "খ", C: "গ", D: "ঘ" };
+                  const displaySet = isBangla ? (banglaSetMap[setName.toUpperCase()] || setName) : setName;
+                  return (
+                    <div className="absolute right-0 top-0">
                       <span className="inline-flex items-center rounded-md bg-teal-50 border border-teal-300 px-2 py-0.5 text-xs font-bold text-teal-800 shrink-0">
                         {isBangla ? `সেট: ${displaySet}` : `Set: ${displaySet}`}
                       </span>
-                    );
-                  })() : <span className="w-10 sm:w-16 shrink-0" />}
-                </div>
+                    </div>
+                  );
+                })()}
+
+                {paper?.instituteLogo && (
+                  <div className="flex justify-center mb-1.5">
+                    <img src={paper.instituteLogo} alt="Logo" className="h-9 w-9 object-contain" />
+                  </div>
+                )}
+
+                {paper?.institute && (
+                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-teal-700 truncate">
+                    {paper.institute}
+                  </p>
+                )}
                 <h2 className="mt-1.5 text-lg sm:text-xl font-bold">
                   {isBangla
                     ? getBengaliPaperTitle(paper?.name, paper?.className, paper?.subject)

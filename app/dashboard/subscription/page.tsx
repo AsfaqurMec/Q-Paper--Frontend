@@ -23,8 +23,9 @@ export default async function SubscriptionPage() {
   const activePlanCode = currentUser?.plan || "free";
   const pendingRequest = myRequests.find((r) => r.status === "pending");
 
-  // If backend plans are returned from DB, use them; fallback to schema defaults if empty
-  const planList = Array.isArray(dbPlans) && dbPlans.length > 0 ? dbPlans : DEFAULT_PLANS;
+  // Ensure plans are strictly sorted in ascending order of price (Free -> Small -> Pro -> Ultra -> Diamond)
+  const rawPlans = Array.isArray(dbPlans) && dbPlans.length > 0 ? dbPlans : DEFAULT_PLANS;
+  const planList = [...rawPlans].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12 font-sans">
