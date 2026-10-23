@@ -11,12 +11,15 @@ export function middleware(request: NextRequest) {
   if ((pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) && !token) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    const fullNext = request.nextUrl.search ? `${pathname}${request.nextUrl.search}` : pathname;
+    url.searchParams.set("next", fullNext);
     return NextResponse.redirect(url);
   }
 
   if ((pathname === "/login" || pathname === "/register") && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const next = request.nextUrl.searchParams.get("next");
+    const redirectPath = next && next.startsWith("/") ? next : "/dashboard";
+    return NextResponse.redirect(new URL(redirectPath, request.url));
   }
 
   if (pathname.startsWith("/admin")) {

@@ -74,7 +74,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         setError(payload.message || "Authentication failed. Please verify your credentials.");
         return;
       }
-      router.push((searchParams.get("next") ?? "/dashboard") as Route);
+      const nextTarget = searchParams.get("next") || (searchParams.get("from") === "landing" ? "/dashboard/subscription" : null) || "/dashboard";
+      router.push(nextTarget as Route);
       router.refresh();
     } catch (err: any) {
       setError(err?.message || "Network connection issue. Please check your internet connection.");

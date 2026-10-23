@@ -5,6 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaperActions } from "@/components/paper-actions";
 import { api } from "@/lib/api";
 import { getSessionUser } from "@/lib/auth";
+import {
+  getBengaliClass,
+  getBengaliSubject,
+  getBengaliPaperTitle,
+  getBengaliExamType,
+  formatBengaliDuration,
+  toBengaliDigits
+} from "@/lib/curriculum-bengali";
 
 export default async function MyQuestionsPage() {
   const [papers, user] = await Promise.all([
@@ -16,21 +24,21 @@ export default async function MyQuestionsPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs sm:text-sm font-medium text-primary">My Questions</p>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">Previously created papers</h1>
-          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Open a saved paper to review, export, or delete it. Created questions are automatically deleted after 45 days.</p>
+          <p className="text-xs sm:text-sm font-medium text-primary">সংরক্ষিত প্রশ্নপত্র</p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">পূর্বের তৈরিকৃত প্রশ্নপত্রসমূহ</h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">তৈরিকৃত প্রশ্নপত্র দেখতে, এক্সপোর্ট করতে বা মুছে ফেলতে পারেন।</p>
         </div>
         <Button asChild>
           <Link href="/dashboard/papers/new">
             <FileQuestion className="h-4 w-4" />
-            Create Paper
+            নতুন প্রশ্নপত্র
           </Link>
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{papers.length} saved paper{papers.length === 1 ? "" : "s"}</CardTitle>
+          <CardTitle>{toBengaliDigits(papers.length)} টি সংরক্ষিত প্রশ্নপত্র</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {papers.map((paper) => (
@@ -39,17 +47,19 @@ export default async function MyQuestionsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-md border px-2 py-0.5 text-xs font-medium uppercase">{paper.status}</span>
                   <p className="text-xs text-muted-foreground">
-                    {paper.subject} - {paper.className} - {paper.examType}
+                    {getBengaliSubject(paper.subject)} - {getBengaliClass(paper.className)} - {getBengaliExamType(paper.examType)}
                   </p>
                 </div>
-                <p className="mt-2 text-sm font-medium">{paper.name}</p>
+                <p className="mt-2 text-sm font-semibold">{getBengaliPaperTitle(paper.name, paper.className, paper.subject)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {paper.questions.length} question{paper.questions.length === 1 ? "" : "s"} - {paper.totalMarks} marks - {paper.duration}
+                  {toBengaliDigits(paper.questions.length)}টি প্রশ্ন - পূর্ণমান: {toBengaliDigits(paper.totalMarks)} - সময়: {formatBengaliDuration(paper.duration)}
                 </p>
               </div>
               <PaperActions
                 paperId={paper.id}
-                paperName={paper.name}
+                paperName={getBengaliPaperTitle(paper.name, paper.className, paper.subject)}
+                className={paper.className}
+                subject={paper.subject}
                 questionType={paper.questions[0]?.type}
                 userPlan={user?.plan || "free"}
                 userRole={user?.role || "user"}
@@ -57,7 +67,7 @@ export default async function MyQuestionsPage() {
               />
             </div>
           ))}
-          {!papers.length && <p className="text-sm text-muted-foreground">No saved papers yet. Create a paper first.</p>}
+          {!papers.length && <p className="text-sm text-muted-foreground">এখনো কোনো প্রশ্নপত্র তৈরি করা হয়নি। প্রথমে একটি প্রশ্ন তৈরি করুন।</p>}
         </CardContent>
       </Card>
     </div>

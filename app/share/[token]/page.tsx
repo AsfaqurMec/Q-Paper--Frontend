@@ -10,6 +10,12 @@ import { Input } from "@/components/ui/input";
 import { PaperPreview } from "@/components/paper-preview";
 import { fetchPublicSharedPaper } from "@/lib/client-api";
 import type { PublicSharedPaperResponse } from "@/lib/api-types";
+import {
+  getBengaliClass,
+  getBengaliSubject,
+  getBengaliPaperTitle,
+  toBengaliDigits
+} from "@/lib/curriculum-bengali";
 
 export default function PublicSharePage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
@@ -373,15 +379,17 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
               Q
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-950 dark:text-slate-50 line-clamp-1">{paper.name}</h1>
+              <h1 className="text-sm font-bold text-slate-950 dark:text-slate-50 line-clamp-1">
+                {getBengaliPaperTitle(paper.name, paper.className, paper.subject)}
+              </h1>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-                  {paper.className}
+                  {getBengaliClass(paper.className)}
                 </Badge>
                 <span>·</span>
-                <span>{paper.subject}</span>
+                <span>{getBengaliSubject(paper.subject)}</span>
                 <span>·</span>
-                <span>{paper.questions?.length || 0} টি প্রশ্ন</span>
+                <span>{toBengaliDigits(paper.questions?.length || 0)} টি প্রশ্ন</span>
               </div>
             </div>
           </div>

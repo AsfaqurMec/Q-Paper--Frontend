@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { MathRenderer } from "@/components/math-renderer";
 import { apiRequest } from "@/lib/client-api";
 import { toStandardDigits } from "@/lib/utils";
-import { getBengaliClass, getBengaliSubject } from "@/lib/curriculum-bengali";
+import { getBengaliClass, getBengaliSubject, toBengaliDigits } from "@/lib/curriculum-bengali";
 import type { BankQuestion, ClassHierarchy, Paper, UserSession } from "@/lib/api-types";
 
 type CreatePaperFromSelectedModalProps = {
@@ -155,12 +155,12 @@ export function CreatePaperFromSelectedModal({
   // Suggested Duration calculation
   const suggestedDuration = useMemo(() => {
     const totalMinutes = mcqQuestions.length * 1 + cqQuestions.length * 20;
-    if (totalMinutes <= 0) return "30 minutes";
+    if (totalMinutes <= 0) return "৩০ মিনিট";
     const hrs = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
-    if (hrs === 0) return `${mins} minutes`;
-    if (mins === 0) return `${hrs} hour${hrs > 1 ? "s" : ""}`;
-    return `${hrs} hr ${mins} min`;
+    if (hrs === 0) return `${toBengaliDigits(mins)} মিনিট`;
+    if (mins === 0) return `${toBengaliDigits(hrs)} ঘণ্টা`;
+    return `${toBengaliDigits(hrs)} ঘণ্টা ${toBengaliDigits(mins)} মিনিট`;
   }, [mcqQuestions.length, cqQuestions.length]);
 
   // Set default values on open

@@ -3,7 +3,17 @@ import { Suspense } from "react";
 import { AuthCard } from "@/components/auth-card";
 import { AuthForm } from "@/components/auth-form";
 
-export default function RegisterPage() {
+import type { Route } from "next";
+
+export default async function RegisterPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ next?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : undefined;
+  const next = resolvedParams?.next;
+  const loginHref = (next ? `/login?next=${encodeURIComponent(next)}` : "/login") as Route;
+
   return (
     <AuthCard
       title="Create your account"
@@ -12,7 +22,7 @@ export default function RegisterPage() {
         <p>
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={loginHref}
             className="font-semibold text-teal-600 dark:text-teal-400 hover:underline transition-colors"
           >
             Sign in here

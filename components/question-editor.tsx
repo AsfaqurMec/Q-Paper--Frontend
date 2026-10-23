@@ -37,6 +37,15 @@ import { latexToCleanMath } from "@/lib/math-utils";
 import { sanitizeSvg } from "@/lib/sanitize";
 import { cn, toStandardDigits } from "@/lib/utils";
 import type { BankQuestion, Paper } from "@/lib/api-types";
+import {
+  getBengaliClass,
+  getBengaliSubject,
+  getBengaliPaperTitle,
+  getBengaliExamType,
+  formatBengaliDuration,
+  toBengaliDigits,
+  getBengaliExportFileName
+} from "@/lib/curriculum-bengali";
 
 export type DraftQuestion = {
   id: string;
@@ -589,8 +598,34 @@ export function QuestionEditor({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const setSuffix = activePreviewSet ? `-Set-${activePreviewSet}` : "";
-      anchor.download = `${currentPaper.name.replace(/[^a-z0-9_-]+/gi, "-")}${setSuffix}.${format}`;
+
+      let downloadFileName = "";
+      const disposition = response.headers.get("content-disposition");
+      if (disposition) {
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          try {
+            downloadFileName = decodeURIComponent(utf8Match[1]);
+          } catch {}
+        }
+        if (!downloadFileName) {
+          const regularMatch = disposition.match(/filename="?([^";]+)"?/i);
+          if (regularMatch && regularMatch[1]) {
+            downloadFileName = regularMatch[1];
+          }
+        }
+      }
+      if (!downloadFileName) {
+        downloadFileName = getBengaliExportFileName({
+          paperName: currentPaper.name,
+          className: currentPaper.className,
+          subject: currentPaper.subject,
+          format,
+          setName: activePreviewSet
+        });
+      }
+
+      anchor.download = downloadFileName;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -685,36 +720,36 @@ export function QuestionEditor({
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase text-primary">
-                  {currentPaper.examType} Exam
+                  {getBengaliExamType(currentPaper.examType)}
                 </span>
                 <span className="text-xs text-muted-foreground font-medium">
-                  {currentPaper.layout === "split" ? "2 Columns (Split)" : "1 Column (Single)"}
+                  {currentPaper.layout === "split" ? "২ কলাম (স্প্লিট)" : "১ কলাম (একক)"}
                 </span>
               </div>
               <h1 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                {currentPaper.name || "Untitled Paper"}
+                {getBengaliPaperTitle(currentPaper.name, currentPaper.className, currentPaper.subject)}
               </h1>
             </div>
 
             {/* Few Important Details Chips */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <div className="rounded-md border bg-muted/30 px-3 py-1.5">
-                <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Subject & Class</span>
-                <span className="font-semibold text-foreground">{currentPaper.subject} • {currentPaper.className}</span>
+                <span className="text-muted-foreground block text-[10px] font-semibold uppercase">বিষয় ও শ্রেণি</span>
+                <span className="font-semibold text-foreground">{getBengaliSubject(currentPaper.subject)} • {getBengaliClass(currentPaper.className)}</span>
               </div>
               <div className="rounded-md border bg-muted/30 px-3 py-1.5">
-                <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Marks & Time</span>
-                <span className="font-semibold text-foreground">{currentPaper.totalMarks} Marks • {currentPaper.duration}</span>
+                <span className="text-muted-foreground block text-[10px] font-semibold uppercase">পূর্ণমান ও সময়</span>
+                <span className="font-semibold text-foreground">পূর্ণমান: {toBengaliDigits(currentPaper.totalMarks)} • {formatBengaliDuration(currentPaper.duration)}</span>
               </div>
               <div className="rounded-md border bg-muted/30 px-3 py-1.5">
-                <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Questions</span>
+                <span className="text-muted-foreground block text-[10px] font-semibold uppercase">মোট প্রশ্ন</span>
                 <span className="font-semibold text-foreground">
-                  {questions.length} Total ({mcqCount} MCQ{cqCount > 0 ? `, ${cqCount} CQ` : ""})
+                  {toBengaliDigits(questions.length)}টি (বহুনির্বাচনী {toBengaliDigits(mcqCount)}টি{cqCount > 0 ? `, সৃজনশীল ${toBengaliDigits(cqCount)}টি` : ""})
                 </span>
               </div>
               {currentPaper.institute && (
                 <div className="rounded-md border bg-muted/30 px-3 py-1.5">
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Institute</span>
+                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">প্রতিষ্ঠান</span>
                   <span className="font-semibold text-foreground truncate max-w-[160px] block" title={currentPaper.institute}>
                     {currentPaper.institute}
                   </span>
@@ -1001,23 +1036,23 @@ export function QuestionEditor({
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                {isAdmin ? "Question Editor" : "Question Paper Details"}
+                {isAdmin ? "প্রশ্ন সম্পাদক (Question Editor)" : "প্রশ্নপত্রের বিবরণ (Paper Details)"}
               </p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight">
-                {currentPaper.name || (initialType === "cq" ? "Creative Questions (CQ)" : "Multiple Choice (MCQ)")}
+                {getBengaliPaperTitle(currentPaper.name, currentPaper.className, currentPaper.subject)}
               </h1>
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{currentPaper.subject}</span>
+                <span className="font-medium text-foreground">{getBengaliSubject(currentPaper.subject)}</span>
                 <span>•</span>
-                <span>{currentPaper.className}</span>
+                <span>{getBengaliClass(currentPaper.className)}</span>
                 <span>•</span>
                 <span className="rounded bg-muted px-1.5 py-0.5 font-medium uppercase text-[10px]">
-                  {currentPaper.layout} layout{currentPaper.cqLayout && currentPaper.cqLayout !== currentPaper.layout ? ` (CQ: ${currentPaper.cqLayout})` : ""}
+                  {currentPaper.layout === "split" ? "২ কলাম (স্প্লিট)" : "১ কলাম (একক)"}{currentPaper.cqLayout && currentPaper.cqLayout !== currentPaper.layout ? ` (CQ: ${currentPaper.cqLayout === "split" ? "২ কলাম" : "১ কলাম"})` : ""}
                 </span>
                 <span>•</span>
-                <span>{currentPaper.duration}</span>
+                <span>সময়: {formatBengaliDuration(currentPaper.duration)}</span>
                 <span>•</span>
-                <span>{currentPaper.totalMarks} marks</span>
+                <span>পূর্ণমান: {toBengaliDigits(currentPaper.totalMarks)}</span>
                 {(currentPaper.mcqSectionTitle || currentPaper.cqSectionTitle) && (
                   <>
                     <span>•</span>
@@ -1790,7 +1825,9 @@ export function QuestionEditor({
         open={exportModal.open}
         onClose={() => setExportModal((prev) => ({ ...prev, open: false }))}
         paperId={currentPaper.id}
-        paperName={currentPaper.name}
+        paperName={getBengaliPaperTitle(currentPaper.name, currentPaper.className, currentPaper.subject)}
+        className={currentPaper.className}
+        subject={currentPaper.subject}
         defaultFormat={exportModal.format}
         activeSet={activePreviewSet || currentPaper.setName}
         userPlan={userPlan}

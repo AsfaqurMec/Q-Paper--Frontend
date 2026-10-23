@@ -22,7 +22,13 @@ import { DashboardQuickGenerator } from "@/components/dashboard-quick-generator"
 import { PaperActions } from "@/components/paper-actions";
 import { api } from "@/lib/api";
 import { getSessionUser } from "@/lib/auth";
-import { getBengaliClass, getBengaliSubject, toBengaliDigits } from "@/lib/curriculum-bengali";
+import {
+  getBengaliClass,
+  getBengaliSubject,
+  toBengaliDigits,
+  getBengaliPaperTitle,
+  formatBengaliDuration
+} from "@/lib/curriculum-bengali";
 
 const FEATURED_SUBJECTS = [
   { name: "উচ্চতর গণিত ১ম পত্র", className: "HSC", chapters: 10, total: "3,800+", color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20" },
@@ -176,7 +182,7 @@ export default async function DashboardPage() {
                       href={`/dashboard/papers/${paper.id}/import-questions`}
                       className="font-bold text-sm text-foreground hover:text-primary transition-colors truncate"
                     >
-                      {paper.name}
+                      {getBengaliPaperTitle(paper.name, paper.className, paper.subject)}
                     </Link>
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-semibold">
                       {getBengaliClass(paper.className)}
@@ -189,7 +195,7 @@ export default async function DashboardPage() {
                     <span>·</span>
                     <span>পূর্ণমান: {toBengaliDigits(paper.totalMarks || 100)}</span>
                     <span>·</span>
-                    <span>সময়: {toBengaliDigits(paper.duration || "১ ঘণ্টা")}</span>
+                    <span>সময়: {formatBengaliDuration(paper.duration || "১ ঘণ্টা")}</span>
                   </div>
                 </div>
 
@@ -204,7 +210,9 @@ export default async function DashboardPage() {
                   )}
                   <PaperActions
                     paperId={paper.id}
-                    paperName={paper.name}
+                    paperName={getBengaliPaperTitle(paper.name, paper.className, paper.subject)}
+                    className={paper.className}
+                    subject={paper.subject}
                     questionType={paper.questions?.[0]?.type}
                     userPlan={user?.plan || "free"}
                     userRole={user?.role || "user"}

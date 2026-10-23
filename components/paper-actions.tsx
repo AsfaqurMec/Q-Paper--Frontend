@@ -13,6 +13,8 @@ import { ConfirmModal } from "@/components/confirm-modal";
 export function PaperActions({
   paperId,
   paperName,
+  className,
+  subject,
   questionType,
   userPlan = "free",
   userRole = "user",
@@ -20,6 +22,8 @@ export function PaperActions({
 }: {
   paperId: string;
   paperName: string;
+  className?: string;
+  subject?: string;
   questionType?: "mcq" | "cq" | "both";
   userPlan?: string;
   userRole?: string;
@@ -99,6 +103,8 @@ export function PaperActions({
         onClose={() => setExportModal((prev) => ({ ...prev, open: false }))}
         paperId={paperId}
         paperName={paperName}
+        className={className}
+        subject={subject}
         defaultFormat={exportModal.format}
         activeSet={activeSet}
         userPlan={userPlan}

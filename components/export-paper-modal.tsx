@@ -17,12 +17,15 @@ import {
   X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getBengaliExportFileName } from "@/lib/curriculum-bengali";
 
 export type ExportPaperModalProps = {
   open: boolean;
   onClose: () => void;
   paperId: string;
   paperName: string;
+  className?: string;
+  subject?: string;
   defaultFormat?: "pdf" | "docx";
   defaultWithAnswer?: boolean;
   activeSet?: string;
@@ -46,6 +49,8 @@ export function ExportPaperModal({
   onClose,
   paperId,
   paperName,
+  className,
+  subject,
   defaultFormat = "pdf",
   defaultWithAnswer = false,
   activeSet,
@@ -186,17 +191,37 @@ export function ExportPaperModal({
       const anchor = document.createElement("a");
       anchor.href = url;
 
-      const safeName = (paperName || "question-paper").replace(/[^a-z0-9_-]+/gi, "-").replace(/^-|-$/g, "");
-      let setSuffix = "";
-      if (isAll) {
-        setSuffix = "-All-Sets";
-      } else if (setKey) {
-        const banglaMap: Record<string, string> = { A: "ক", B: "খ", C: "গ", D: "ঘ" };
-        setSuffix = `-Set-${setKey}${banglaMap[setKey] ? `-${banglaMap[setKey]}` : ""}`;
+      let downloadFileName = "";
+      const disposition = response.headers.get("content-disposition");
+      if (disposition) {
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          try {
+            downloadFileName = decodeURIComponent(utf8Match[1]);
+          } catch {
+            // fallback
+          }
+        }
+        if (!downloadFileName) {
+          const regularMatch = disposition.match(/filename="?([^";]+)"?/i);
+          if (regularMatch && regularMatch[1]) {
+            downloadFileName = regularMatch[1];
+          }
+        }
       }
-      const answerSuffix = withAnswer ? "-With-Answers" : "-Question-Paper";
+      if (!downloadFileName) {
+        downloadFileName = getBengaliExportFileName({
+          paperName,
+          className,
+          subject,
+          format: formatType,
+          withAnswer,
+          setName: setKey,
+          isAllSets: isAll
+        });
+      }
 
-      anchor.download = `${safeName}${setSuffix}${answerSuffix}.${formatType}`;
+      anchor.download = downloadFileName;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

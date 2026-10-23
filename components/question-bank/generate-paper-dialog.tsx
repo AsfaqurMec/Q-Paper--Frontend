@@ -23,7 +23,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
 import { extractChapterNumber, toStandardDigits } from "@/lib/utils";
-import { getBengaliClass, getBengaliSubject, getBengaliChapter, toBengaliDigits } from "@/lib/curriculum-bengali";
+import {
+  getBengaliClass,
+  getBengaliSubject,
+  getBengaliChapter,
+  toBengaliDigits,
+  getBengaliExamType,
+  formatBengaliDuration
+} from "@/lib/curriculum-bengali";
 import type { ClassHierarchy, Paper, UserSession } from "@/lib/api-types";
 
 type GeneratePaperDialogProps = {
@@ -307,25 +314,26 @@ export function GeneratePaperDialog({
     if (customTitle.trim()) return customTitle;
     const bnClass = getBengaliClass(className);
     const bnSubj = getBengaliSubject(subject);
+    const bnExam = getBengaliExamType(examType);
     const scope = chapter === "all" ? "সম্পূর্ণ পাঠ্যক্রম" : getBengaliChapter(chapter);
-    return `${bnClass} ${bnSubj} - ${scope} (${examType})`;
+    return `${bnClass} ${bnSubj} - ${scope} ${bnExam}`;
   }, [customTitle, className, subject, chapter, examType]);
 
   // Auto-calculated duration
   const computedDuration = useMemo(() => {
-    if (customDuration.trim()) return customDuration;
+    if (customDuration.trim()) return formatBengaliDuration(customDuration);
     let totalMinutes = 0;
     const mcqNum = Number(toStandardDigits(mcqCount)) || 0;
     const cqNum = Number(toStandardDigits(cqCount)) || 0;
     if (paperType === "mcq" || paperType === "both") totalMinutes += mcqNum * 1;
     if (paperType === "cq" || paperType === "both") totalMinutes += cqNum * 20;
 
-    if (totalMinutes <= 0) return "30 minutes";
+    if (totalMinutes <= 0) return "৩০ মিনিট";
     const hrs = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
-    if (hrs === 0) return `${mins} minutes`;
-    if (mins === 0) return `${hrs} hour${hrs > 1 ? "s" : ""}`;
-    return `${hrs} hr ${mins} min`;
+    if (hrs === 0) return `${toBengaliDigits(mins)} মিনিট`;
+    if (mins === 0) return `${toBengaliDigits(hrs)} ঘণ্টা`;
+    return `${toBengaliDigits(hrs)} ঘণ্টা ${toBengaliDigits(mins)} মিনিট`;
   }, [customDuration, paperType, mcqCount, cqCount]);
 
   // Total marks calculation

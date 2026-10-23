@@ -22,6 +22,12 @@ import { MathRenderer } from "@/components/math-renderer";
 import { useAppModal } from "@/components/modal-provider";
 import type { Paper } from "@/lib/api-types";
 import type { DraftQuestion } from "@/components/question-editor";
+import {
+  getBengaliExportFileName,
+  getBengaliPaperTitle,
+  getBengaliClass,
+  getBengaliSubject
+} from "@/lib/curriculum-bengali";
 
 type McqSetDialogProps = {
   open: boolean;
@@ -160,8 +166,11 @@ export function McqSetDialog({
   if (!open) return null;
 
   function copyAnswerKeyText() {
-    let text = `=== ${paper.name} - OMR ANSWER KEY MATRIX ===\n`;
-    text += `Class: ${paper.className} | Subject: ${paper.subject}\n`;
+    const title = isBangla ? getBengaliPaperTitle(paper.name, paper.className, paper.subject) : (paper.name || "Paper");
+    const cls = isBangla ? getBengaliClass(paper.className) : paper.className;
+    const subj = isBangla ? getBengaliSubject(paper.subject) : paper.subject;
+    let text = `=== ${title} - ${isBangla ? "ওএমআর উত্তরমালা তালিকা" : "OMR ANSWER KEY MATRIX"} ===\n`;
+    text += `${isBangla ? "শ্রেণি" : "Class"}: ${cls} | ${isBangla ? "বিষয়" : "Subject"}: ${subj}\n`;
     text += `Q.No\tSet A (ক)\tSet B (খ)\tSet C (গ)\tSet D (ঘ)\n`;
     text += `----------------------------------------------------\n`;
 
@@ -236,11 +245,35 @@ export function McqSetDialog({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const baseName = (paper.name || "paper").trim().replace(/[\\/:*?"<>|]+/g, "_") || "question-paper";
-      const banglaSetMap: Record<string, string> = { A: "ক", B: "খ", C: "গ", D: "ঘ" };
-      const setLabel = isBangla ? `${setKey}-${banglaSetMap[setKey] || setKey}` : setKey;
-      const ansSuffix = setWithAnswer ? "-With-Answers" : "-Question-Paper";
-      anchor.download = `${baseName}-Set-${setLabel}${ansSuffix}.${format}`;
+
+      let downloadFileName = "";
+      const disposition = response.headers.get("content-disposition");
+      if (disposition) {
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          try {
+            downloadFileName = decodeURIComponent(utf8Match[1]);
+          } catch {}
+        }
+        if (!downloadFileName) {
+          const regularMatch = disposition.match(/filename="?([^";]+)"?/i);
+          if (regularMatch && regularMatch[1]) {
+            downloadFileName = regularMatch[1];
+          }
+        }
+      }
+      if (!downloadFileName) {
+        downloadFileName = getBengaliExportFileName({
+          paperName: paper.name,
+          className: paper.className,
+          subject: paper.subject,
+          format,
+          withAnswer: setWithAnswer,
+          setName: setKey
+        });
+      }
+
+      anchor.download = downloadFileName;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -309,9 +342,35 @@ export function McqSetDialog({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const baseName = (paper.name || "paper").trim().replace(/[\\/:*?"<>|]+/g, "_") || "question-paper";
-      const ansSuffix = setWithAnswer ? "-With-Answers" : "-Question-Paper";
-      anchor.download = `${baseName}-All-Sets${ansSuffix}.${format}`;
+
+      let downloadFileName = "";
+      const disposition = response.headers.get("content-disposition");
+      if (disposition) {
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          try {
+            downloadFileName = decodeURIComponent(utf8Match[1]);
+          } catch {}
+        }
+        if (!downloadFileName) {
+          const regularMatch = disposition.match(/filename="?([^";]+)"?/i);
+          if (regularMatch && regularMatch[1]) {
+            downloadFileName = regularMatch[1];
+          }
+        }
+      }
+      if (!downloadFileName) {
+        downloadFileName = getBengaliExportFileName({
+          paperName: paper.name,
+          className: paper.className,
+          subject: paper.subject,
+          format,
+          withAnswer: setWithAnswer,
+          isAllSets: true
+        });
+      }
+
+      anchor.download = downloadFileName;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -339,12 +398,15 @@ export function McqSetDialog({
       copyAnswerKeyText();
       return;
     }
+    const printTitle = isBangla ? getBengaliPaperTitle(paper.name, paper.className, paper.subject) : (paper.name || "Paper");
+    const printClass = isBangla ? getBengaliClass(paper.className) : paper.className;
+    const printSubject = isBangla ? getBengaliSubject(paper.subject) : paper.subject;
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>${paper.name} - OMR Answer Key Matrix</title>
+          <title>${printTitle} - ${isBangla ? "ওএমআর উত্তরমালা তালিকা" : "OMR Answer Key Matrix"}</title>
           <style>
             body { font-family: 'SolaimanLipi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 28px; color: #0f172a; margin: 0; }
             .header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 16px; }
@@ -360,8 +422,8 @@ export function McqSetDialog({
         </head>
         <body>
           <div class="header">
-            <h1>${paper.name}</h1>
-            <p class="meta">${paper.className} | ${paper.subject} | ওএমআর সমন্বিত উত্তরমালা তালিকা (OMR Answer Key Matrix)</p>
+            <h1>${printTitle}</h1>
+            <p class="meta">${printClass} | ${printSubject} | ${isBangla ? "ওএমআর সমন্বিত উত্তরমালা তালিকা" : "OMR Answer Key Matrix"}</p>
           </div>
           <table>
             <thead>
