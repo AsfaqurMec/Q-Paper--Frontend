@@ -13,6 +13,9 @@ import { getSessionUser } from "@/lib/auth";
 import { SubscriptionPlanSlider } from "@/components/subscription/subscription-plan-slider";
 import { formatBnNumber } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function SubscriptionPage() {
   const [dbPlans, currentUser, myRequests] = await Promise.all([
     fetchPlans(),

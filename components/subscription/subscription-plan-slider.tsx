@@ -35,8 +35,6 @@ export function SubscriptionPlanSlider({
   const currentPlan =
     sortedPlans.find((p) => p.code === activePlanCode) || sortedPlans[0];
 
-  const isFivePlans = sortedPlans.length === 5;
-
   return (
     <div className="relative space-y-4">
       {/* SECTION SUBHEADER */}
@@ -56,9 +54,9 @@ export function SubscriptionPlanSlider({
         </div>
       </div>
 
-      {/* 3-IN-A-ROW GRID FOR LARGE DEVICES */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 items-stretch pt-2">
-        {sortedPlans.map((plan, idx) => {
+      {/* 3-IN-A-ROW GRID FOR LARGE DEVICES (ROWS 3 EACH) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch pt-2">
+        {sortedPlans.map((plan) => {
           const isSmall = plan.code === "small";
           const isPro = plan.code === "pro";
           const isUltra = plan.code === "ultra";
@@ -71,19 +69,10 @@ export function SubscriptionPlanSlider({
           const durationText =
             plan.duration || (isFree ? "লাইফটাইম" : "৩০ দিন (১ মাস)");
 
-          // On large screens (6 cols), each card takes 2 cols (= 3 cards per row).
-          // When 5 plans are present, Card 4 (Ultra) starts at col 2 so row 2 is centered!
-          const colSpanClass =
-            isFivePlans && idx === 3
-              ? "lg:col-span-2 lg:col-start-2"
-              : isFivePlans && idx === 4
-              ? "lg:col-span-2"
-              : "lg:col-span-2";
-
           return (
             <div
               key={plan.code}
-              className={`${colSpanClass} relative rounded-3xl p-5 sm:p-6 lg:p-6 flex flex-col justify-between transition-all duration-300 ${
+              className={`relative rounded-3xl p-5 sm:p-6 lg:p-6 flex flex-col justify-between transition-all duration-300 ${
                 isCurrent
                   ? "bg-card border-2 border-emerald-600 shadow-xl ring-4 ring-emerald-500/20 z-10"
                   : isDiamond

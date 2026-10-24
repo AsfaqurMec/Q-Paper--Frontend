@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -82,7 +82,19 @@ export function ProfileView({ initialUser, plans, dashboardStats, myRequests }: 
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Current Plan from Database / API (strictly sorted ascending by price)
-  const rawPlans = Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS;
+  const [livePlans, setLivePlans] = useState<Plan[]>(plans || []);
+
+  useEffect(() => {
+    if (activeTab === "plan" && (!livePlans || livePlans.length === 0)) {
+      clientApi.plans().then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          setLivePlans(res);
+        }
+      }).catch(() => {});
+    }
+  }, [activeTab, livePlans]);
+
+  const rawPlans = Array.isArray(livePlans) && livePlans.length > 0 ? livePlans : (Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS);
   const planList = [...rawPlans].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
   const activePlanCode = user.plan || "free";
   const currentPlan = planList.find((p) => p.code === activePlanCode) || planList[0];

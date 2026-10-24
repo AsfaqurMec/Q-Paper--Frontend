@@ -106,19 +106,34 @@ export { DEFAULT_PLANS };
 
 
 export async function fetchPlans(): Promise<Plan[]> {
-  try {
-    const res = await fetch(`${API_URL}/api/plans`, {
-      cache: "no-store"
-    });
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const json = await res.json();
-    const list = json?.data || json;
-    if (Array.isArray(list) && list.length > 0) {
-      return [...list].sort((a: Plan, b: Plan) => Number(a.price || 0) - Number(b.price || 0));
+  const candidateUrls = Array.from(
+    new Set([
+      `${API_URL}/api/plans`,
+      "http://127.0.0.1:5001/api/plans",
+      "http://localhost:5001/api/plans",
+      "http://127.0.0.1:5000/api/plans",
+      "http://localhost:5000/api/plans"
+    ])
+  );
+
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: { Accept: "application/json" }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const list = json?.data || json;
+        if (Array.isArray(list) && list.length > 0) {
+          return [...list].sort((a: Plan, b: Plan) => Number(a.price || 0) - Number(b.price || 0));
+        }
+      }
+    } catch {
+      // Continue to next URL
     }
-  } catch (error) {
-    console.error("Failed to fetch plans from backend:", error);
   }
+
   return [...DEFAULT_PLANS].sort((a: Plan, b: Plan) => Number(a.price || 0) - Number(b.price || 0));
 }
 

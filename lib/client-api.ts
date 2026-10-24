@@ -66,8 +66,9 @@ import { getDeviceHeaders } from "@/lib/device";
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}) {
   const isAuthRoute = path.startsWith("/api/auth/") || path.startsWith("api/auth/");
+  const isDirectApi = path === "/api/plans" || path === "api/plans";
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const targetUrl = isAuthRoute ? normalizedPath : `/api/backend${path.replace(/^\/api/, "")}`;
+  const targetUrl = isAuthRoute || isDirectApi ? normalizedPath : `/api/backend${path.replace(/^\/api/, "")}`;
   const deviceHeaders = typeof window !== "undefined" ? getDeviceHeaders() : {};
   const response = await fetch(targetUrl, {
     ...options,

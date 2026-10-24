@@ -19,13 +19,19 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
   const authHeader = request.headers.get("Authorization") || request.headers.get("authorization");
   let token = cookieStore.get(ACCESS_COOKIE)?.value || (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined);
 
-  if (!token) {
-    return NextResponse.json({ success: false, message: "Authentication required", data: null }, { status: 401 });
-  }
-
   const { path } = await context.params;
   const url = new URL(request.url);
   const cleanPath = path[0] === "api" ? path.slice(1) : path;
+  const isPublicRoute =
+    cleanPath[0] === "plans" ||
+    cleanPath[0] === "health" ||
+    cleanPath[0] === "curriculum" ||
+    (cleanPath[0] === "shared-links" && cleanPath[1] === "public");
+
+  if (!token && !isPublicRoute) {
+    return NextResponse.json({ success: false, message: "Authentication required", data: null }, { status: 401 });
+  }
+
   const backendUrl = `${API_URL}/api/${cleanPath.join("/")}${url.search}`;
 
   try {
@@ -38,20 +44,37 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
     const userAgent = request.headers.get("user-agent");
 
     const proxyHeaders: Record<string, string> = {
-      "Content-Type": request.headers.get("Content-Type") ?? "application/json",
-      Authorization: `Bearer ${token}`
+      "Content-Type": request.headers.get("Content-Type") ?? "application/json"
     };
+    if (token) {
+      proxyHeaders["Authorization"] = `Bearer ${token}`;
+    }
     if (deviceId) proxyHeaders["x-device-id"] = deviceId;
     if (deviceFp) proxyHeaders["x-device-fingerprint"] = deviceFp;
     if (forwardedFor) proxyHeaders["x-forwarded-for"] = forwardedFor;
     if (userAgent) proxyHeaders["user-agent"] = userAgent;
 
-    let response = await fetch(backendUrl, {
-      method: request.method,
-      headers: proxyHeaders,
-      body,
-      cache: "no-store"
-    });
+    let response: Response;
+    try {
+      response = await fetch(backendUrl, {
+        method: request.method,
+        headers: proxyHeaders,
+        body,
+        cache: "no-store"
+      });
+    } catch (fetchErr) {
+      if (backendUrl.includes("localhost")) {
+        const altUrl = backendUrl.replace("localhost", "127.0.0.1");
+        response = await fetch(altUrl, {
+          method: request.method,
+          headers: proxyHeaders,
+          body,
+          cache: "no-store"
+        });
+      } else {
+        throw fetchErr;
+      }
+    }
 
     // Seamless automatic token rotation if access token expired (15m TTL)
     if (response.status === 401) {
