@@ -3,17 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
   BookOpen,
   Check,
-  CheckCircle2,
   Clock,
-  Crown,
-  FileSpreadsheet,
   FileText,
-  HelpCircle,
   Layers,
   Loader2,
   SlidersHorizontal,
@@ -23,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/client-api";
-import { extractChapterNumber, toStandardDigits } from "@/lib/utils";
+import { cn, extractChapterNumber, toStandardDigits } from "@/lib/utils";
 import {
   getBengaliClass,
   getBengaliSubject,
@@ -43,6 +40,30 @@ type GeneratePaperDialogProps = {
   preselectedChapter?: string;
   preselectedType?: string;
 };
+
+const PHASES = [
+  {
+    step: 1,
+    titleBn: "পাঠ্যক্রম ও অধ্যায়",
+    titleEn: "Syllabus Scope",
+    icon: Layers,
+    description: "শ্রেণি, বিষয় ও অধ্যায় নির্বাচন"
+  },
+  {
+    step: 2,
+    titleBn: "প্রশ্নের ধরন ও সংখ্যা",
+    titleEn: "Question Structure",
+    icon: FileText,
+    description: "নৈর্ব্যক্তিক ও সৃজনশীল বিন্যাস"
+  },
+  {
+    step: 3,
+    titleBn: "পরীক্ষার বিবরণ ও সেটিংস",
+    titleEn: "Exam Settings",
+    icon: SlidersHorizontal,
+    description: "শিরোনাম, সময়, লেআউট ও বোর্ড"
+  }
+] as const;
 
 const GENERATION_STEPS = [
   {
@@ -69,7 +90,7 @@ const GENERATION_STEPS = [
 
 export function GeneratePaperDialog({
   open,
-  user,
+  user: _user,
   onClose,
   preselectedClass,
   preselectedSubject,
@@ -77,8 +98,8 @@ export function GeneratePaperDialog({
   preselectedType
 }: GeneratePaperDialogProps) {
   const router = useRouter();
-  const isPro = user.plan === "pro" || user.role === "admin";
   const [mounted, setMounted] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
     setMounted(true);
@@ -234,6 +255,8 @@ export function GeneratePaperDialog({
   // Sync preselected fields whenever the dialog is opened
   useEffect(() => {
     if (!open) return;
+    setCurrentPhase(1);
+    setError("");
     if (preselectedClass && preselectedClass !== "all") {
       setClassName(preselectedClass);
     }
@@ -362,11 +385,81 @@ export function GeneratePaperDialog({
     return count;
   }, [paperType, mcqCount, cqCount]);
 
-  if (!open || !mounted) return null;
+  function validatePhase(phase: 1 | 2): boolean {
+    if (phase === 1) {
+      if (!className || !subject) {
+        setError("দয়া করে শ্রেণি ও বিষয় নির্বাচন করুন।");
+        return false;
+      }
+      return true;
+    }
+    if (phase === 2) {
+      const finalMcq = paperType === "cq" ? 0 : (Number(toStandardDigits(mcqCount)) || 0);
+      const finalCq = paperType === "mcq" ? 0 : (Number(toStandardDigits(cqCount)) || 0);
 
-  async function handleGenerate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!isPro) return;
+      if (paperType === "mcq" && finalMcq <= 0) {
+        setError("কমপক্ষে ১টি বহুনির্বাচনী (MCQ) প্রশ্ন নির্ধারণ করুন।");
+        return false;
+      }
+      if (paperType === "cq" && finalCq <= 0) {
+        setError("কমপক্ষে ১টি সৃজনশীল (CQ) প্রশ্ন নির্ধারণ করুন।");
+        return false;
+      }
+      if (paperType === "both" && finalMcq <= 0 && finalCq <= 0) {
+        setError("কমপক্ষে ১টি বহুনির্বাচনী বা সৃজনশীল প্রশ্ন নির্ধারণ করুন।");
+        return false;
+      }
+      return true;
+    }
+    return true;
+  }
+
+  function goToPhase(target: 1 | 2 | 3) {
+    if (target === currentPhase) return;
+    if (target < currentPhase) {
+      setError("");
+      setCurrentPhase(target);
+      return;
+    }
+    // If transitioning forward, validate prerequisite phases
+    if (currentPhase === 1) {
+      if (!validatePhase(1)) return;
+      if (target === 3) {
+        if (!validatePhase(2)) {
+          setCurrentPhase(2);
+          return;
+        }
+      }
+    } else if (currentPhase === 2) {
+      if (!validatePhase(2)) return;
+    }
+    setError("");
+    setCurrentPhase(target);
+  }
+
+  function handleNext() {
+    if (currentPhase === 1) {
+      if (validatePhase(1)) {
+        setError("");
+        setCurrentPhase(2);
+      }
+    } else if (currentPhase === 2) {
+      if (validatePhase(2)) {
+        setError("");
+        setCurrentPhase(3);
+      }
+    }
+  }
+
+  function handlePrev() {
+    setError("");
+    if (currentPhase > 1) {
+      setCurrentPhase((prev) => (prev - 1) as 1 | 2 | 3);
+    }
+  }
+
+  async function handleGenerate(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setError("");
 
     const finalMcqCount = paperType === "cq" ? 0 : (Number(toStandardDigits(mcqCount)) || 0);
@@ -443,6 +536,17 @@ export function GeneratePaperDialog({
     }
   }
 
+  function handleFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (currentPhase < 3) {
+      handleNext();
+      return;
+    }
+    handleGenerate(e);
+  }
+
+  if (!open || !mounted) return null;
+
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-2 sm:p-4 md:p-6 backdrop-blur-md overflow-hidden animate-in fade-in duration-200 w-screen h-screen min-h-[100dvh]">
       <div className="relative w-full max-w-4xl xl:max-w-5xl max-h-[92vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -456,8 +560,8 @@ export function GeneratePaperDialog({
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <h2 className="text-sm sm:text-lg font-bold tracking-tight text-foreground">Smart Question Paper Generator</h2>
-                <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-amber-500/25">
-                  <Crown className="h-3 w-3" /> Pro
+                <span className="flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 border border-indigo-500/25">
+                  <Sparkles className="h-3 w-3" /> Question Bank
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1 sm:line-clamp-none">
@@ -469,37 +573,14 @@ export function GeneratePaperDialog({
             type="button"
             onClick={onClose}
             disabled={isGenerating || isRedirecting}
-            className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             title="Close"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Not Pro View */}
-        {!isPro ? (
-          <div className="p-8 space-y-5 text-center flex-1 flex flex-col items-center justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 shadow-inner">
-              <Crown className="h-8 w-8" />
-            </div>
-            <div className="max-w-md mx-auto space-y-2">
-              <h3 className="text-lg font-bold text-foreground">Pro Plan Feature</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                The Smart Question Paper Generator automatically pulls randomized MCQs and Creative Questions (CQs) from the national syllabus, formats your paper, and calculates total marks and exam duration in 1 click.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Close
-              </Button>
-              <Button asChild className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md hover:from-amber-600 hover:to-amber-700">
-                <Link href="/dashboard/subscription">
-                  <Sparkles className="h-4 w-4 mr-1.5" /> Upgrade to Pro
-                </Link>
-              </Button>
-            </div>
-          </div>
-        ) : isGenerating || isRedirecting ? (
+        {isGenerating || isRedirecting ? (
           /* Loading Screen While Paper is Being Generated */
           <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 text-center overflow-y-auto space-y-6 animate-in fade-in zoom-in-95 duration-300">
             {/* Animated glowing centerpiece */}
@@ -627,580 +708,722 @@ export function GeneratePaperDialog({
             </div>
           </div>
         ) : (
-          /* Main Generator Form */
-          <form onSubmit={handleGenerate} className="flex-1 flex flex-col overflow-hidden">
-            {/* Scrollable Form Body */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar px-3.5 sm:px-6 py-3.5 sm:py-5 space-y-4 sm:space-y-5">
-              {error && (
-                <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <span className="font-medium">{error}</span>
-                </div>
-              )}
-
-              {/* Section 1: Syllabus Scope & Target */}
-              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 sm:p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary">
-                      <Layers className="h-3.5 w-3.5" />
-                    </div>
-                    <span>১. পাঠ্যক্রম ও অধ্যায় নির্বাচন (Syllabus Scope & Target)</span>
-                  </div>
-                  {loadingHierarchy && (
-                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" /> লোড হচ্ছে...
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                  {/* Class */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">শ্রেণি / বিভাগ</label>
-                    <select
-                      value={className}
-                      onChange={(e) => handleClassChange(e.target.value)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    >
-                      {hierarchy.length > 0 ? (
-                        hierarchy.map((cls) => (
-                          <option key={cls.className} value={cls.className}>
-                            {cls.nameBn || getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)} টি প্রশ্ন)
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="SSC (Class 9-10)">৯ম-১০ম শ্রেণি (এসএসসি)</option>
-                          <option value="HSC (Class 11-12)">১১শ-১২শ শ্রেণি (এইচএসসি)</option>
-                        </>
+          <>
+            {/* 3-Phase Stepper Tab Bar */}
+            <div className="shrink-0 border-b bg-muted/20 px-3.5 sm:px-6 py-2 sm:py-2.5">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+                {PHASES.map((p) => {
+                  const isActive = currentPhase === p.step;
+                  const isDone = currentPhase > p.step;
+                  const Icon = p.icon;
+                  return (
+                    <button
+                      key={p.step}
+                      type="button"
+                      onClick={() => goToPhase(p.step as 1 | 2 | 3)}
+                      className={cn(
+                        "flex items-center gap-2 sm:gap-2.5 rounded-xl border p-2 sm:p-2.5 text-left transition-all select-none cursor-pointer",
+                        isActive
+                          ? "border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary/30"
+                          : isDone
+                          ? "border-emerald-500/30 bg-emerald-500/5 text-foreground hover:bg-muted/60"
+                          : "border-border/60 bg-card text-muted-foreground hover:bg-muted/40"
                       )}
-                    </select>
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">বিষয়</label>
-                    <select
-                      value={subject}
-                      onChange={(e) => handleSubjectChange(e.target.value)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     >
-                      {availableSubjects.length > 0 ? (
-                        availableSubjects.map((s) => (
-                          <option key={s.name} value={s.name}>
-                            {s.nameBn || getBengaliSubject(s.name)} ({toBengaliDigits(s.totalCount)} টি প্রশ্ন)
-                          </option>
-                        ))
-                      ) : (
-                        <option value={subject}>{getBengaliSubject(subject)}</option>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* Chapter */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">অধ্যায় ব্যাপ্তি</label>
-                    <select
-                      value={chapter}
-                      onChange={(e) => setChapter(e.target.value)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    >
-                      <option value="all">🌟 সকল অধ্যায় (সম্পূর্ণ পাঠ্যক্রম)</option>
-                      {availableChapters.map((ch) => (
-                        <option key={ch.name} value={ch.name}>
-                          {ch.nameBn || getBengaliChapter(ch.name)} ({toBengaliDigits(ch.mcqCount)} নৈর্ব্যক্তিক, {toBengaliDigits(ch.cqCount)} সৃজনশীল)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Board Questions Only Switch */}
-                <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
-                  <label htmlFor="board-only-toggle" className="cursor-pointer flex items-center gap-2.5 select-none">
-                    <input
-                      id="board-only-toggle"
-                      type="checkbox"
-                      checked={boardOnly}
-                      onChange={(e) => setBoardOnly(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
-                    />
-                    <div>
-                      <span className="font-semibold text-foreground">📌 শুধু বোর্ড প্রশ্ন ব্যবহার করুন (Board Questions Only)</span>
-                      <p className="text-[11px] text-muted-foreground">বিভিন্ন শিক্ষা বোর্ডের বিগত বছরের পরীক্ষার প্রশ্ন থেকে বাছাই করবে</p>
-                    </div>
-                  </label>
-                  {boardOnly && (
-                    <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                      বোর্ড প্রশ্ন সক্রিয়
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Section 2: Question Type & Quantities */}
-              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 sm:p-5 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary">
-                      <FileText className="h-3.5 w-3.5" />
-                    </div>
-                    <span>২. প্রশ্নের ধরন ও সংখ্যা নির্ধারণ (Question Types & Amounts)</span>
-                  </div>
-                  {/* Live total badge */}
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-muted border px-2.5 py-0.5 text-xs font-medium text-muted-foreground font-mono">
-                      মোট প্রশ্ন: {totalQuestionsCount}টি
-                    </span>
-                    <span className="rounded-full bg-primary/15 border border-primary/20 px-3 py-0.5 text-xs font-bold text-primary font-mono shadow-2xs">
-                      মোট নম্বর: {totalCalculatedMarks}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Segmented Type Selector */}
-                <div className="grid grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setPaperType("both")}
-                    className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all shadow-2xs ${
-                      paperType === "both"
-                        ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
-                        : "border-border bg-card hover:bg-muted/80 text-muted-foreground"
-                    }`}
-                  >
-                    <Layers className="h-4 w-4" /> Both (MCQ + CQ)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaperType("mcq")}
-                    className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all shadow-2xs ${
-                      paperType === "mcq"
-                        ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
-                        : "border-border bg-card hover:bg-muted/80 text-muted-foreground"
-                    }`}
-                  >
-                    <Check className="h-4 w-4" /> Only MCQ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaperType("cq")}
-                    className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all shadow-2xs ${
-                      paperType === "cq"
-                        ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
-                        : "border-border bg-card hover:bg-muted/80 text-muted-foreground"
-                    }`}
-                  >
-                    <BookOpen className="h-4 w-4" /> Only CQ (Creative)
-                  </button>
-                </div>
-
-                {/* Dynamic Counts Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                  {/* MCQ Count Card */}
-                  {(paperType === "mcq" || paperType === "both") && (
-                    <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <label className="text-xs font-bold text-foreground">বহুনির্বাচনী প্রশ্ন (MCQ Count)</label>
-                          <p className="text-[11px] text-muted-foreground">প্রতিটি প্রশ্নের মান ১</p>
-                        </div>
-                        <span className="text-xs font-semibold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-md">
-                          {mcqCount} × ১ = {mcqCount} নম্বর
-                        </span>
+                      <div
+                        className={cn(
+                          "flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all",
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-xs"
+                            : isDone
+                            ? "bg-emerald-500 text-white"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {isDone ? <Check className="h-4 w-4 stroke-[2.5]" /> : p.step}
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={mcqCount}
-                          onChange={(e) => handleMcqTotalChange(e.target.value)}
-                          onBlur={() => {
-                            if (!mcqCount || Number(mcqCount) < 1) handleMcqTotalChange(25);
-                          }}
-                          className="h-9 w-20 rounded-lg border bg-background px-2 text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
-                        />
-                        <div className="flex flex-wrap gap-1.5 flex-1">
-                          {[10, 20, 25, 30, 50].map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => handleMcqTotalChange(val)}
-                              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                                mcqCount === val
-                                  ? "bg-primary text-primary-foreground font-bold shadow-2xs"
-                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              }`}
-                            >
-                              {val}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* MCQ Distribution: Theory vs Math */}
-                      <div className="mt-2 pt-2.5 border-t border-border/60 space-y-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-foreground">মান বণ্টন (Distribution):</span>
-                          <span className="text-[11px] text-muted-foreground font-mono font-medium">
-                            {mcqTheoryCount} তত্ত্বীয় + {mcqMathCount} গাণিতিক = {mcqCount}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs font-bold truncate">
+                            {p.titleBn}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">📖 তত্ত্বীয়:</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={mcqTheoryCount}
-                              onChange={(e) => handleMcqTheoryChange(e.target.value)}
-                              onBlur={() => {
-                                if (mcqTheoryCount === "" || Number(mcqTheoryCount) < 0) handleMcqTheoryChange(0);
-                              }}
-                              className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                          <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">🔢 গাণিতিক:</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={mcqMathCount}
-                              onChange={(e) => handleMcqMathChange(e.target.value)}
-                              onBlur={() => {
-                                if (mcqMathCount === "" || Number(mcqMathCount) < 0) handleMcqMathChange(0);
-                              }}
-                              className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                        </div>
+                        <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
+                          {p.titleEn}
+                        </p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* CQ Count Card */}
-                  {(paperType === "cq" || paperType === "both") && (
-                    <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <label className="text-xs font-bold text-foreground">সৃজনশীল প্রশ্ন (CQ Count)</label>
-                          <p className="text-[11px] text-muted-foreground">প্রতিটি প্রশ্নের মান ১০</p>
-                        </div>
-                        <span className="text-xs font-semibold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-md">
-                          {cqCount} × ১০ = {Number(cqCount || 0) * 10} নম্বর
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={cqCount}
-                          onChange={(e) => handleCqTotalChange(e.target.value)}
-                          onBlur={() => {
-                            if (!cqCount || Number(cqCount) < 1) handleCqTotalChange(4);
-                          }}
-                          className="h-9 w-20 rounded-lg border bg-background px-2 text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
-                        />
-                        <div className="flex flex-wrap gap-1.5 flex-1">
-                          {[2, 4, 5, 8, 10].map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              onClick={() => handleCqTotalChange(val)}
-                              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                                cqCount === val
-                                  ? "bg-primary text-primary-foreground font-bold shadow-2xs"
-                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              }`}
-                            >
-                              {val}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* CQ Distribution: Theory vs Math */}
-                      <div className="mt-2 pt-2.5 border-t border-border/60 space-y-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-foreground">মান বণ্টন (Distribution):</span>
-                          <span className="text-[11px] text-muted-foreground font-mono font-medium">
-                            {cqTheoryCount} তত্ত্বীয় + {cqMathCount} গাণিতিক = {cqCount}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">📖 তত্ত্বীয়:</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={cqTheoryCount}
-                              onChange={(e) => handleCqTheoryChange(e.target.value)}
-                              onBlur={() => {
-                                if (cqTheoryCount === "" || Number(cqTheoryCount) < 0) handleCqTheoryChange(0);
-                              }}
-                              className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                          <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">🔢 গাণিতিক:</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={cqMathCount}
-                              onChange={(e) => handleCqMathChange(e.target.value)}
-                              onBlur={() => {
-                                if (cqMathCount === "" || Number(cqMathCount) < 0) handleCqMathChange(0);
-                              }}
-                              className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Section 3: Paper Details & Exam Customization */}
-              <div className="rounded-xl border border-border/80 bg-muted/20 p-4 sm:p-5 space-y-4">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
-                  </div>
-                  <span>৩. পরীক্ষার বিবরণ ও কাস্টমাইজেশন (Paper Details & Customization)</span>
-                </div>
-
-                {/* Title & Exam Type */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="text-xs font-medium text-foreground">প্রশ্নপত্রের শিরোনাম (Paper Title)</label>
-                    <input
-                      type="text"
-                      placeholder={computedTitle}
-                      value={customTitle}
-                      onChange={(e) => setCustomTitle(e.target.value)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-foreground">পরীক্ষার ধরন</label>
-                    <select
-                      value={examType}
-                      onChange={(e) => setExamType(e.target.value)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    >
-                      <option value="Model Test">মডেল টেস্ট (Model Test)</option>
-                      <option value="Class Test">শ্রেণি পরীক্ষা (Class Test)</option>
-                      <option value="Pre-Test Examination">প্রাক-নির্বাচনী পরীক্ষা (Pre-Test)</option>
-                      <option value="Term Final Exam">সাময়িক পরীক্ষা (Term Final)</option>
-                      <option value="Board Final Practice">বোর্ড ফাইনাল প্রস্তুতি (Board Practice)</option>
-                      <option value="Quick Quiz">কুইজ পরীক্ষা (Quick Quiz)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Board and Year Selection Box */}
-                <div className="rounded-xl border border-amber-300/50 bg-amber-500/5 p-3.5 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      🏛️ বোর্ড ও পরীক্ষার সাল ফিল্টার
-                    </span>
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={boardOnly}
-                        onChange={(e) => setBoardOnly(e.target.checked)}
-                        className="rounded border-border accent-primary h-3.5 w-3.5"
-                      />
-                      <span className="font-medium text-foreground">বোর্ড প্রশ্ন ফিল্টার সক্রিয় রাখুন</span>
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground">নির্দিষ্ট বোর্ড</label>
-                      <select
-                        value={selectedBoard}
-                        onChange={(e) => {
-                          setSelectedBoard(e.target.value);
-                          if (e.target.value !== "all") setBoardOnly(true);
-                        }}
-                        className="mt-1 h-9 w-full rounded-lg border bg-background px-2.5 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="all">সকল বোর্ড</option>
-                        {[
-                          "ঢাকা বোর্ড", "রাজশাহী বোর্ড", "চট্টগ্রাম বোর্ড", "কুমিল্লা বোর্ড",
-                          "যশোর বোর্ড", "বরিশাল বোর্ড", "সিলেট বোর্ড", "দিনাজপুর বোর্ড",
-                          "ময়মনসিংহ বোর্ড", "মাদ্রাসা বোর্ড", "কারিগরি বোর্ড"
-                        ].map((b) => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground">পরীক্ষার সাল</label>
-                      <select
-                        value={selectedYear}
-                        onChange={(e) => {
-                          setSelectedYear(e.target.value);
-                          if (e.target.value !== "all") setBoardOnly(true);
-                        }}
-                        className="mt-1 h-9 w-full rounded-lg border bg-background px-2.5 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="all">সকল সাল</option>
-                        {["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"].map((y) => (
-                          <option key={y} value={y}>{toBengaliDigits(y)} সাল</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4 Settings Column */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
-                  {/* Duration */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">সময়কাল</label>
-                    <div className="relative mt-1.5">
-                      <input
-                        type="text"
-                        placeholder={computedDuration}
-                        value={customDuration}
-                        onChange={(e) => setCustomDuration(e.target.value)}
-                        className="h-10 w-full rounded-lg border bg-background pl-8 pr-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20"
-                      />
-                      <Clock className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-
-                  {/* Difficulty */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">কঠিনতার মাত্রা</label>
-                    <select
-                      value={difficulty}
-                      onChange={(e) => setDifficulty(e.target.value as any)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="all">ভারসাম্যপূর্ণ (সাধারণ)</option>
-                      <option value="easy">সহজ (Easy)</option>
-                      <option value="medium">মাঝারি (Medium)</option>
-                      <option value="hard">কঠিন (Hard)</option>
-                    </select>
-                  </div>
-
-                  {/* Layout */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">প্রিন্ট লেআউট</label>
-                    <select
-                      value={layout}
-                      onChange={(e) => setLayout(e.target.value as any)}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="split">২ কলাম (স্প্লিট ভিউ)</option>
-                      <option value="single">১ কলাম (ফুল উইডথ)</option>
-                    </select>
-                  </div>
-
-                  {/* Questions Per Page */}
-                  <div>
-                    <label className="text-xs font-medium text-foreground">প্রতি পৃষ্ঠায় প্রশ্ন</label>
-                    <select
-                      value={questionsPerPage}
-                      onChange={(e) => setQuestionsPerPage(Number(e.target.value))}
-                      className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value={0}>স্বয়ংক্রিয় (পৃষ্ঠা অনুযায়ী ফিট)</option>
-                      <option value={5}>৫টি প্রশ্ন</option>
-                      <option value={8}>৮টি প্রশ্ন</option>
-                      <option value={10}>১০টি প্রশ্ন (প্রমিত)</option>
-                      <option value={12}>১২টি প্রশ্ন</option>
-                      <option value={15}>১৫টি প্রশ্ন</option>
-                      <option value={20}>২০টি প্রশ্ন</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Section Headings Customization */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-                  {(paperType === "mcq" || paperType === "both") && (
-                    <div>
-                      <label className="text-xs font-medium text-foreground">MCQ বিভাগ শিরোনাম (Section Heading)</label>
-                      <input
-                        type="text"
-                        placeholder="Default: ক-বিভাগ: বহু-নির্বাচনী প্রশ্ন"
-                        value={mcqSectionTitle}
-                        onChange={(e) => setMcqSectionTitle(e.target.value)}
-                        className="mt-1.5 h-9 w-full rounded-lg border bg-background px-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                  )}
-                  {(paperType === "cq" || paperType === "both") && (
-                    <div>
-                      <label className="text-xs font-medium text-foreground">CQ বিভাগ শিরোনাম (Section Heading)</label>
-                      <input
-                        type="text"
-                        placeholder="Default: খ-বিভাগ: সৃজনশীল প্রশ্ন"
-                        value={cqSectionTitle}
-                        onChange={(e) => setCqSectionTitle(e.target.value)}
-                        className="mt-1.5 h-9 w-full rounded-lg border bg-background px-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* General Exam Instructions */}
-                <div>
-                  <label className="text-xs font-medium text-foreground">পরীক্ষার সাধারণ নির্দেশনা (General Instructions)</label>
-                  <textarea
-                    rows={2}
-                    placeholder="যেমন: সকল প্রশ্নের মান সমান। প্রশ্নপত্রের কোনো স্থানে দাগ দেয়া যাবে না।"
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border bg-background p-2.5 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20 resize-none"
-                  />
-                </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Modal Fixed Footer */}
-            <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-t bg-muted/40 backdrop-blur-sm px-3.5 sm:px-6 py-3 sm:py-4">
-              {/* Paper Summary Pill Strip */}
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-semibold text-foreground">
-                  সারসংক্ষেপ:
-                </span>
-                <span className="rounded-md bg-background border px-2 py-0.5 text-[11px] font-medium text-foreground">
-                  {className} • {subject}
-                </span>
-                <span className="rounded-md bg-background border px-2 py-0.5 text-[11px] font-medium text-foreground">
-                  {totalQuestionsCount}টি প্রশ্ন ({totalCalculatedMarks} নম্বর)
-                </span>
-                <span className="rounded-md bg-background border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  ⏱️ {computedDuration}
-                </span>
+            {/* Main Generator Form */}
+            <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar px-3.5 sm:px-6 py-3.5 sm:py-5 space-y-4 sm:space-y-5">
+                {error && (
+                  <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in duration-200">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span className="font-medium">{error}</span>
+                  </div>
+                )}
+
+                {/* ================= PHASE 1: Syllabus Scope & Target ================= */}
+                {currentPhase === 1 && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="rounded-xl border border-border/80 bg-muted/20 p-4 sm:p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground">
+                          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary">
+                            <Layers className="h-3.5 w-3.5" />
+                          </div>
+                          <span>১. পাঠ্যক্রম ও অধ্যায় নির্বাচন (Syllabus Scope & Target)</span>
+                        </div>
+                        {loadingHierarchy && (
+                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" /> লোড হচ্ছে...
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        {/* Class */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">শ্রেণি / বিভাগ</label>
+                          <select
+                            value={className}
+                            onChange={(e) => handleClassChange(e.target.value)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                          >
+                            {hierarchy.length > 0 ? (
+                              hierarchy.map((cls) => (
+                                <option key={cls.className} value={cls.className}>
+                                  {cls.nameBn || getBengaliClass(cls.className)} ({toBengaliDigits(cls.totalCount)} টি প্রশ্ন)
+                                </option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="SSC (Class 9-10)">৯ম-১০ম শ্রেণি (এসএসসি)</option>
+                                <option value="HSC (Class 11-12)">১১শ-১২শ শ্রেণি (এইচএসসি)</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+
+                        {/* Subject */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">বিষয়</label>
+                          <select
+                            value={subject}
+                            onChange={(e) => handleSubjectChange(e.target.value)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                          >
+                            {availableSubjects.length > 0 ? (
+                              availableSubjects.map((s) => (
+                                <option key={s.name} value={s.name}>
+                                  {s.nameBn || getBengaliSubject(s.name)} ({toBengaliDigits(s.totalCount)} টি প্রশ্ন)
+                                </option>
+                              ))
+                            ) : (
+                              <option value={subject}>{getBengaliSubject(subject)}</option>
+                            )}
+                          </select>
+                        </div>
+
+                        {/* Chapter */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">অধ্যায় ব্যাপ্তি</label>
+                          <select
+                            value={chapter}
+                            onChange={(e) => setChapter(e.target.value)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                          >
+                            <option value="all">🌟 সকল অধ্যায় (সম্পূর্ণ পাঠ্যক্রম)</option>
+                            {availableChapters.map((ch) => (
+                              <option key={ch.name} value={ch.name}>
+                                {ch.nameBn || getBengaliChapter(ch.name)} ({toBengaliDigits(ch.mcqCount)} নৈর্ব্যক্তিক, {toBengaliDigits(ch.cqCount)} সৃজনশীল)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Board Questions Only Switch */}
+                      <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs">
+                        <label htmlFor="board-only-toggle" className="cursor-pointer flex items-center gap-2.5 select-none">
+                          <input
+                            id="board-only-toggle"
+                            type="checkbox"
+                            checked={boardOnly}
+                            onChange={(e) => setBoardOnly(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                          />
+                          <div>
+                            <span className="font-semibold text-foreground">📌 শুধু বোর্ড প্রশ্ন ব্যবহার করুন (Board Questions Only)</span>
+                            <p className="text-[11px] text-muted-foreground">বিভিন্ন শিক্ষা বোর্ডের বিগত বছরের পরীক্ষার প্রশ্ন থেকে বাছাই করবে</p>
+                          </div>
+                        </label>
+                        {boardOnly && (
+                          <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            বোর্ড প্রশ্ন সক্রিয়
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Syllabus Overview Info Card */}
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground">
+                            নির্বাচিত সিলেবাস: {getBengaliClass(className)} • {getBengaliSubject(subject)}
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            অধ্যায়: {chapter === "all" ? "সকল অধ্যায় (সম্পূর্ণ পাঠ্যক্রম)" : getBengaliChapter(chapter)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="rounded-md bg-background/80 border px-2.5 py-1 text-xs font-medium text-foreground">
+                          {boardOnly ? "📌 শুধু বোর্ড প্রশ্ন" : "🌐 প্রশ্নব্যাংকের সকল প্রশ্ন"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================= PHASE 2: Question Type & Amount ================= */}
+                {currentPhase === 2 && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="rounded-xl border border-border/80 bg-muted/20 p-4 sm:p-5 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground">
+                          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary">
+                            <FileText className="h-3.5 w-3.5" />
+                          </div>
+                          <span>২. প্রশ্নের ধরন ও সংখ্যা নির্ধারণ (Question Types & Amounts)</span>
+                        </div>
+                        {/* Live total badge */}
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-muted border px-2.5 py-0.5 text-xs font-medium text-muted-foreground font-mono">
+                            মোট প্রশ্ন: {totalQuestionsCount}টি
+                          </span>
+                          <span className="rounded-full bg-primary/15 border border-primary/20 px-3 py-0.5 text-xs font-bold text-primary font-mono shadow-2xs">
+                            মোট নম্বর: {totalCalculatedMarks}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Segmented Type Selector */}
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setPaperType("both")}
+                          className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all shadow-2xs cursor-pointer ${
+                            paperType === "both"
+                              ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
+                              : "border-border bg-card hover:bg-muted/80 text-muted-foreground"
+                          }`}
+                        >
+                          <Layers className="h-4 w-4" /> Both (MCQ + CQ)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaperType("mcq")}
+                          className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all shadow-2xs cursor-pointer ${
+                            paperType === "mcq"
+                              ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
+                              : "border-border bg-card hover:bg-muted/80 text-muted-foreground"
+                          }`}
+                        >
+                          <Check className="h-4 w-4" /> Only MCQ
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaperType("cq")}
+                          className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs font-semibold transition-all shadow-2xs cursor-pointer ${
+                            paperType === "cq"
+                              ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20"
+                              : "border-border bg-card hover:bg-muted/80 text-muted-foreground"
+                          }`}
+                        >
+                          <BookOpen className="h-4 w-4" /> Only CQ (Creative)
+                        </button>
+                      </div>
+
+                      {/* Dynamic Counts Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        {/* MCQ Count Card */}
+                        {(paperType === "mcq" || paperType === "both") && (
+                          <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <label className="text-xs font-bold text-foreground">বহুনির্বাচনী প্রশ্ন (MCQ Count)</label>
+                                <p className="text-[11px] text-muted-foreground">প্রতিটি প্রশ্নের মান ১</p>
+                              </div>
+                              <span className="text-xs font-semibold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-md">
+                                {mcqCount} × ১ = {mcqCount} নম্বর
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={mcqCount}
+                                onChange={(e) => handleMcqTotalChange(e.target.value)}
+                                onBlur={() => {
+                                  if (!mcqCount || Number(mcqCount) < 1) handleMcqTotalChange(25);
+                                }}
+                                className="h-9 w-20 rounded-lg border bg-background px-2 text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
+                              />
+                              <div className="flex flex-wrap gap-1.5 flex-1">
+                                {[10, 20, 25, 30, 50].map((val) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => handleMcqTotalChange(val)}
+                                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
+                                      mcqCount === val
+                                        ? "bg-primary text-primary-foreground font-bold shadow-2xs"
+                                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                    }`}
+                                  >
+                                    {val}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* MCQ Distribution: Theory vs Math */}
+                            <div className="mt-2 pt-2.5 border-t border-border/60 space-y-2">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-semibold text-foreground">মান বণ্টন (Distribution):</span>
+                                <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                                  {mcqTheoryCount} তত্ত্বীয় + {mcqMathCount} গাণিতিক = {mcqCount}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2.5">
+                                <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">📖 তত্ত্বীয়:</span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={mcqTheoryCount}
+                                    onChange={(e) => handleMcqTheoryChange(e.target.value)}
+                                    onBlur={() => {
+                                      if (mcqTheoryCount === "" || Number(mcqTheoryCount) < 0) handleMcqTheoryChange(0);
+                                    }}
+                                    className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">🔢 গাণিতিক:</span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={mcqMathCount}
+                                    onChange={(e) => handleMcqMathChange(e.target.value)}
+                                    onBlur={() => {
+                                      if (mcqMathCount === "" || Number(mcqMathCount) < 0) handleMcqMathChange(0);
+                                    }}
+                                    className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* CQ Count Card */}
+                        {(paperType === "cq" || paperType === "both") && (
+                          <div className="space-y-3 rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <label className="text-xs font-bold text-foreground">সৃজনশীল প্রশ্ন (CQ Count)</label>
+                                <p className="text-[11px] text-muted-foreground">প্রতিটি প্রশ্নের মান ১০</p>
+                              </div>
+                              <span className="text-xs font-semibold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-md">
+                                {cqCount} × ১০ = {Number(cqCount || 0) * 10} নম্বর
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={cqCount}
+                                onChange={(e) => handleCqTotalChange(e.target.value)}
+                                onBlur={() => {
+                                  if (!cqCount || Number(cqCount) < 1) handleCqTotalChange(4);
+                                }}
+                                className="h-9 w-20 rounded-lg border bg-background px-2 text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
+                              />
+                              <div className="flex flex-wrap gap-1.5 flex-1">
+                                {[2, 4, 5, 8, 10].map((val) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => handleCqTotalChange(val)}
+                                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
+                                      cqCount === val
+                                        ? "bg-primary text-primary-foreground font-bold shadow-2xs"
+                                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                    }`}
+                                  >
+                                    {val}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* CQ Distribution: Theory vs Math */}
+                            <div className="mt-2 pt-2.5 border-t border-border/60 space-y-2">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-semibold text-foreground">মান বণ্টন (Distribution):</span>
+                                <span className="text-[11px] text-muted-foreground font-mono font-medium">
+                                  {cqTheoryCount} তত্ত্বীয় + {cqMathCount} গাণিতিক = {cqCount}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2.5">
+                                <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">📖 তত্ত্বীয়:</span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={cqTheoryCount}
+                                    onChange={(e) => handleCqTheoryChange(e.target.value)}
+                                    onBlur={() => {
+                                      if (cqTheoryCount === "" || Number(cqTheoryCount) < 0) handleCqTheoryChange(0);
+                                    }}
+                                    className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/20 px-2.5 py-1.5">
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">🔢 গাণিতিক:</span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={cqMathCount}
+                                    onChange={(e) => handleCqMathChange(e.target.value)}
+                                    onBlur={() => {
+                                      if (cqMathCount === "" || Number(cqMathCount) < 0) handleCqMathChange(0);
+                                    }}
+                                    className="h-7 w-16 rounded-md border bg-background text-center text-xs font-bold font-mono focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================= PHASE 3: Paper Details & Customization ================= */}
+                {currentPhase === 3 && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="rounded-xl border border-border/80 bg-muted/20 p-4 sm:p-5 space-y-4">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary">
+                          <SlidersHorizontal className="h-3.5 w-3.5" />
+                        </div>
+                        <span>৩. পরীক্ষার বিবরণ ও কাস্টমাইজেশন (Paper Details & Customization)</span>
+                      </div>
+
+                      {/* Title & Exam Type */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="text-xs font-medium text-foreground">প্রশ্নপত্রের শিরোনাম (Paper Title)</label>
+                          <input
+                            type="text"
+                            placeholder={computedTitle}
+                            value={customTitle}
+                            onChange={(e) => setCustomTitle(e.target.value)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-medium text-foreground">পরীক্ষার ধরন</label>
+                          <select
+                            value={examType}
+                            onChange={(e) => setExamType(e.target.value)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                          >
+                            <option value="Model Test">মডেল টেস্ট (Model Test)</option>
+                            <option value="Class Test">শ্রেণি পরীক্ষা (Class Test)</option>
+                            <option value="Pre-Test Examination">প্রাক-নির্বাচনী পরীক্ষা (Pre-Test)</option>
+                            <option value="Term Final Exam">সাময়িক পরীক্ষা (Term Final)</option>
+                            <option value="Board Final Practice">বোর্ড ফাইনাল প্রস্তুতি (Board Practice)</option>
+                            <option value="Quick Quiz">কুইজ পরীক্ষা (Quick Quiz)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Board and Year Selection Box */}
+                      <div className="rounded-xl border border-amber-300/50 bg-amber-500/5 p-3.5 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            🏛️ বোর্ড ও পরীক্ষার সাল ফিল্টার
+                          </span>
+                          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={boardOnly}
+                              onChange={(e) => setBoardOnly(e.target.checked)}
+                              className="rounded border-border accent-primary h-3.5 w-3.5 cursor-pointer"
+                            />
+                            <span className="font-medium text-foreground">বোর্ড প্রশ্ন ফিল্টার সক্রিয় রাখুন</span>
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-semibold text-muted-foreground">নির্দিষ্ট বোর্ড</label>
+                            <select
+                              value={selectedBoard}
+                              onChange={(e) => {
+                                setSelectedBoard(e.target.value);
+                                if (e.target.value !== "all") setBoardOnly(true);
+                              }}
+                              className="mt-1 h-9 w-full rounded-lg border bg-background px-2.5 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            >
+                              <option value="all">সকল বোর্ড</option>
+                              {[
+                                "ঢাকা বোর্ড", "রাজশাহী বোর্ড", "চট্টগ্রাম বোর্ড", "কুমিল্লা বোর্ড",
+                                "যশোর বোর্ড", "বরিশাল বোর্ড", "সিলেট বোর্ড", "দিনাজপুর বোর্ড",
+                                "ময়মনসিংহ বোর্ড", "মাদ্রাসা বোর্ড", "কারিগরি বোর্ড"
+                              ].map((b) => (
+                                <option key={b} value={b}>{b}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-semibold text-muted-foreground">পরীক্ষার সাল</label>
+                            <select
+                              value={selectedYear}
+                              onChange={(e) => {
+                                setSelectedYear(e.target.value);
+                                if (e.target.value !== "all") setBoardOnly(true);
+                              }}
+                              className="mt-1 h-9 w-full rounded-lg border bg-background px-2.5 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                            >
+                              <option value="all">সকল সাল</option>
+                              {["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"].map((y) => (
+                                <option key={y} value={y}>{toBengaliDigits(y)} সাল</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4 Settings Column */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+                        {/* Duration */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">সময়কাল</label>
+                          <div className="relative mt-1.5">
+                            <input
+                              type="text"
+                              placeholder={computedDuration}
+                              value={customDuration}
+                              onChange={(e) => setCustomDuration(e.target.value)}
+                              className="h-10 w-full rounded-lg border bg-background pl-8 pr-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20"
+                            />
+                            <Clock className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+
+                        {/* Difficulty */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">কঠিনতার মাত্রা</label>
+                          <select
+                            value={difficulty}
+                            onChange={(e) => setDifficulty(e.target.value as any)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                          >
+                            <option value="all">ভারসাম্যপূর্ণ (সাধারণ)</option>
+                            <option value="easy">সহজ (Easy)</option>
+                            <option value="medium">মাঝারি (Medium)</option>
+                            <option value="hard">কঠিন (Hard)</option>
+                          </select>
+                        </div>
+
+                        {/* Layout */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">প্রিন্ট লেআউট</label>
+                          <select
+                            value={layout}
+                            onChange={(e) => setLayout(e.target.value as any)}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                          >
+                            <option value="split">২ কলাম (স্প্লিট ভিউ)</option>
+                            <option value="single">১ কলাম (ফুল উইডথ)</option>
+                          </select>
+                        </div>
+
+                        {/* Questions Per Page */}
+                        <div>
+                          <label className="text-xs font-medium text-foreground">প্রতি পৃষ্ঠায় প্রশ্ন</label>
+                          <select
+                            value={questionsPerPage}
+                            onChange={(e) => setQuestionsPerPage(Number(e.target.value))}
+                            className="mt-1.5 h-10 w-full rounded-lg border bg-background px-3 text-xs font-medium shadow-2xs focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                          >
+                            <option value={0}>স্বয়ংক্রিয় (পৃষ্ঠা অনুযায়ী ফিট)</option>
+                            <option value={5}>৫টি প্রশ্ন</option>
+                            <option value={8}>৮টি প্রশ্ন</option>
+                            <option value={10}>১০টি প্রশ্ন (প্রমিত)</option>
+                            <option value={12}>১২টি প্রশ্ন</option>
+                            <option value={15}>১৫টি প্রশ্ন</option>
+                            <option value={20}>২০টি প্রশ্ন</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Section Headings Customization */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                        {(paperType === "mcq" || paperType === "both") && (
+                          <div>
+                            <label className="text-xs font-medium text-foreground">MCQ বিভাগ শিরোনাম (Section Heading)</label>
+                            <input
+                              type="text"
+                              placeholder="Default: ক-বিভাগ: বহু-নির্বাচনী প্রশ্ন"
+                              value={mcqSectionTitle}
+                              onChange={(e) => setMcqSectionTitle(e.target.value)}
+                              className="mt-1.5 h-9 w-full rounded-lg border bg-background px-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                        )}
+                        {(paperType === "cq" || paperType === "both") && (
+                          <div>
+                            <label className="text-xs font-medium text-foreground">CQ বিভাগ শিরোনাম (Section Heading)</label>
+                            <input
+                              type="text"
+                              placeholder="Default: খ-বিভাগ: সৃজনশীল প্রশ্ন"
+                              value={cqSectionTitle}
+                              onChange={(e) => setCqSectionTitle(e.target.value)}
+                              className="mt-1.5 h-9 w-full rounded-lg border bg-background px-3 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* General Exam Instructions */}
+                      <div>
+                        <label className="text-xs font-medium text-foreground">পরীক্ষার সাধারণ নির্দেশনা (General Instructions)</label>
+                        <textarea
+                          rows={2}
+                          placeholder="যেমন: সকল প্রশ্নের মান সমান। প্রশ্নপত্রের কোনো স্থানে দাগ দেয়া যাবে না।"
+                          value={instructions}
+                          onChange={(e) => setInstructions(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border bg-background p-2.5 text-xs shadow-2xs focus:ring-2 focus:ring-primary/20 resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Final Confirmation Card */}
+                    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4 space-y-2">
+                      <div className="flex items-center justify-between border-b border-indigo-500/10 pb-2">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                          চূড়ান্ত প্রশ্নপত্র সারসংক্ষেপ (Final Paper Summary)
+                        </span>
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                          {totalCalculatedMarks} নম্বর • {totalQuestionsCount}টি প্রশ্ন
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-muted-foreground pt-1">
+                        <div>
+                          <span className="font-semibold text-foreground">শিরোনাম:</span>{" "}
+                          <span className="truncate block">{computedTitle}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground">শ্রেণি ও বিষয়:</span>{" "}
+                          <span>{getBengaliClass(className)} • {getBengaliSubject(subject)}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground">সময়কাল:</span>{" "}
+                          <span>{computedDuration}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground">লেআউট:</span>{" "}
+                          <span>{layout === "split" ? "২ কলাম (স্প্লিট)" : "১ কলাম (ফুল)"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-                <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isGenerating}
-                  className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md shadow-indigo-500/20 font-semibold"
-                >
-                  <Sparkles className="h-4 w-4 mr-1.5" />
-                  Generate &amp; Open Paper
-                </Button>
+              {/* Modal Fixed Footer with Previous, Next, and Generate */}
+              <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-t bg-muted/40 backdrop-blur-sm px-3.5 sm:px-6 py-3 sm:py-4">
+                {/* Paper Summary Pill Strip */}
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-semibold text-foreground">
+                    সারসংক্ষেপ:
+                  </span>
+                  <span className="rounded-md bg-background border px-2 py-0.5 text-[11px] font-medium text-foreground">
+                    {getBengaliClass(className)} • {getBengaliSubject(subject)}
+                  </span>
+                  <span className="rounded-md bg-background border px-2 py-0.5 text-[11px] font-medium text-foreground">
+                    {totalQuestionsCount}টি প্রশ্ন ({totalCalculatedMarks} নম্বর)
+                  </span>
+                  <span className="rounded-md bg-background border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    ⏱️ {computedDuration}
+                  </span>
+                </div>
+
+                {/* Navigation Action Buttons */}
+                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                  {currentPhase === 1 ? (
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
+                      বাতিল (Cancel)
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handlePrev}
+                      disabled={isGenerating}
+                      className="flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      পূর্ববর্তী ধাপ (Previous)
+                    </Button>
+                  )}
+
+                  {currentPhase < 3 ? (
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={isGenerating}
+                      className="flex items-center gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold cursor-pointer"
+                    >
+                      পরবর্তী ধাপ (Next)
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={isGenerating || isRedirecting}
+                      className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md shadow-indigo-500/20 font-semibold cursor-pointer"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      প্রশ্নপত্র তৈরি করুন (Generate Paper)
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          </form>
+            </form>
+          </>
         )}
       </div>
     </div>,

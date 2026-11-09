@@ -300,23 +300,8 @@ export function ImportImageModal({
         reader.readAsDataURL(file);
       });
 
-      // Attempt backend upload to Cloudinary
-      try {
-        const uploadRes = await apiRequest<{ imageUrl: string }>("/api/uploads/image", {
-          method: "POST",
-          body: JSON.stringify({ folder: "questions", fileName: file.name, imageData: dataUrl })
-        });
-        if (uploadRes?.imageUrl) {
-          setSelectedImage(uploadRes.imageUrl);
-          setIsUploading(false);
-          return;
-        }
-      } catch (backendErr) {
-        // Fallback to storing dataUrl directly if Cloudinary fails or is unconfigured
-        console.warn("[ImportImage] Cloudinary upload fallback to data URL:", backendErr);
-      }
-
-      // If backend fails or not configured, dataUrl is completely valid
+      // Store dataUrl directly during selection.
+      // Cloudinary upload is strictly deferred until the user saves the question.
       setSelectedImage(dataUrl);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Failed to process image file");

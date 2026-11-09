@@ -344,21 +344,11 @@ export function QuestionCreationWizard({
     if (!file) return;
     try {
       const dataUrl = await fileToDataUrl(file);
-      try {
-        const upload = await apiRequest<{ imageUrl: string }>("/api/uploads/image", {
-          method: "POST",
-          body: JSON.stringify({ folder: "questions", fileName: file.name, imageData: dataUrl })
-        });
-        if (upload?.imageUrl) {
-          updatePreview(questionId, { imageUrl: upload.imageUrl });
-          return;
-        }
-      } catch (uploadErr) {
-        console.warn("[QuestionCreationWizard] Backend upload fallback to data URL:", uploadErr);
-      }
+      // Strictly store in preview state as data URL during preview.
+      // Permanent Cloudinary upload occurs ONLY when user explicitly imports/saves questions.
       updatePreview(questionId, { imageUrl: dataUrl });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload image");
+      setError(err instanceof Error ? err.message : "Failed to load image");
     }
   }
 

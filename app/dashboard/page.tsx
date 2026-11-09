@@ -151,7 +151,7 @@ export default async function DashboardPage() {
             </Link>
           </Button>
           <Button asChild size="sm" className="gap-1.5 text-xs font-semibold">
-            <Link href="/dashboard/question-bank">
+            <Link href="/dashboard/papers/new">
               <FilePlus2 className="h-4 w-4" />
               নতুন প্রশ্নপত্র
             </Link>
@@ -220,7 +220,7 @@ export default async function DashboardPage() {
               </p>
             </div>
             <Button asChild variant="outline" size="sm" className="text-xs h-8 shrink-0 self-start sm:self-auto">
-              <Link href="/dashboard/question-bank">
+              <Link href="/dashboard/papers/new">
                 <FilePlus2 className="h-3.5 w-3.5 mr-1 text-primary" /> নতুন প্রশ্নপত্র
               </Link>
             </Button>

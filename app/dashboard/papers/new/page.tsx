@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
+import { PaperCreationWizard } from "@/components/paper-creation-wizard";
+import { getSessionUser } from "@/lib/auth";
 
-export default function NewPaperPage() {
-  redirect("/dashboard/question-bank");
+export default async function NewPaperPage() {
+  const user = await getSessionUser();
+  return <PaperCreationWizard userPlan={user?.plan} userRole={user?.role} />;
 }
-

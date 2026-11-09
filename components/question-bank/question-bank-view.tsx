@@ -966,9 +966,6 @@ export function QuestionBankView({
           >
             <Sparkles className="h-4 w-4" />
             Generate Question Paper
-            <span className="rounded bg-white/20 px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider text-white">
-              Pro
-            </span>
           </Button>
 
           {user.role === "admin" && (
@@ -990,7 +987,7 @@ export function QuestionBankView({
             <div>
               <h2 className="text-sm font-semibold">National Curriculum Question Bank</h2>
               <p className="text-xs text-muted-foreground">
-                You are currently viewing national curriculum questions. Upgrade to Standard or Pro to generate unlimited custom exams and save private questions.
+                You are currently viewing national curriculum questions. You can generate exam papers with the Smart Generator or upgrade to Standard/Pro for unlimited exams and saving private questions.
               </p>
             </div>
           </div>
